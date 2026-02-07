@@ -17,8 +17,6 @@ public record SearchRequest(
         Double longitude,
 
         @NotNull(message = "검색 반경은 필수 값입니다")
-        @Min(value = 1, message = "검색 반경은 1 이상이어야 합니다")
-        @Max(value = 20000, message = "검색 반경은 20000 이하여야 합니다")
         Double radius,
 
         @Min(value = 0, message = "페이지 번호는 0 이상이어야 합니다")

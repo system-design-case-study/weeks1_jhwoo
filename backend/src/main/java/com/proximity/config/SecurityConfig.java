@@ -1,6 +1,8 @@
 package com.proximity.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.proximity.adapter.in.web.JwtAuthenticationFilter;
+import com.proximity.adapter.in.web.RateLimitFilter;
 import com.proximity.application.port.out.AuthPort;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,8 +28,14 @@ public class SecurityConfig {
     }
 
     @Bean
+    public RateLimitFilter rateLimitFilter(ObjectMapper objectMapper) {
+        return new RateLimitFilter(objectMapper);
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
-                                                   JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
+                                                   JwtAuthenticationFilter jwtAuthenticationFilter,
+                                                   RateLimitFilter rateLimitFilter) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -41,6 +49,7 @@ public class SecurityConfig {
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
                 )
+                .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }

@@ -7,6 +7,8 @@ import com.proximity.application.exception.InvalidRadiusException;
 import com.proximity.application.port.in.SearchUseCase;
 import com.proximity.application.port.out.CachePort;
 import com.proximity.application.port.out.SearchPort;
+import com.proximity.config.MetricsConfig.CacheHitRatioHolder;
+import io.micrometer.core.instrument.DistributionSummary;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,23 +25,37 @@ public class SearchService implements SearchUseCase {
 
     private final SearchPort searchPort;
     private final CachePort cachePort;
+    private final DistributionSummary searchResultCountSummary;
+    private final DistributionSummary searchRadiusHistogram;
+    private final CacheHitRatioHolder cacheHitRatioHolder;
 
-    public SearchService(SearchPort searchPort, CachePort cachePort) {
+    public SearchService(SearchPort searchPort,
+                         CachePort cachePort,
+                         DistributionSummary searchResultCountSummary,
+                         DistributionSummary searchRadiusHistogram,
+                         CacheHitRatioHolder cacheHitRatioHolder) {
         this.searchPort = searchPort;
         this.cachePort = cachePort;
+        this.searchResultCountSummary = searchResultCountSummary;
+        this.searchRadiusHistogram = searchRadiusHistogram;
+        this.cacheHitRatioHolder = cacheHitRatioHolder;
     }
 
     @Override
     public SearchResponse search(SearchRequest request) {
         validateRadius(request.radius());
+        searchRadiusHistogram.record(request.radius());
 
         String cacheKey = GridCacheKeyGenerator.searchKey(
                 request.latitude(), request.longitude(), request.radius());
 
         Optional<SearchResponse> cached = cachePort.getSearchCache(cacheKey);
         if (cached.isPresent()) {
+            cacheHitRatioHolder.recordHit();
             return cached.get();
         }
+
+        cacheHitRatioHolder.recordMiss();
 
         double radiusMeters = request.radius() * KM_TO_METERS;
 
@@ -56,6 +72,8 @@ public class SearchService implements SearchUseCase {
                 request.longitude(),
                 radiusMeters
         );
+
+        searchResultCountSummary.record(total);
 
         SearchResponse response = new SearchResponse(businesses, total, request.page(), request.size());
         cachePort.putSearchCache(cacheKey, response);

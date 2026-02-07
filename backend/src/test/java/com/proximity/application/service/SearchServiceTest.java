@@ -6,6 +6,8 @@ import com.proximity.application.dto.SearchResponse;
 import com.proximity.application.exception.InvalidRadiusException;
 import com.proximity.application.port.out.CachePort;
 import com.proximity.application.port.out.SearchPort;
+import com.proximity.config.MetricsConfig.CacheHitRatioHolder;
+import io.micrometer.core.instrument.DistributionSummary;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -38,6 +40,15 @@ class SearchServiceTest {
 
     @Mock
     private CachePort cachePort;
+
+    @Mock
+    private DistributionSummary searchResultCountSummary;
+
+    @Mock
+    private DistributionSummary searchRadiusHistogram;
+
+    @Mock
+    private CacheHitRatioHolder cacheHitRatioHolder;
 
     @InjectMocks
     private SearchService searchService;

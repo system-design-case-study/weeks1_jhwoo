@@ -38,6 +38,8 @@ public class JooqSearchAdapter implements SearchPort {
                             BUSINESSES.ID,
                             BUSINESSES.NAME,
                             BUSINESSES.ADDRESS,
+                            BUSINESSES.LATITUDE,
+                            BUSINESSES.LONGITUDE,
                             distance,
                             BUSINESSES.CATEGORY
                     )

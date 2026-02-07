@@ -70,8 +70,8 @@ class SearchServiceTest {
             when(cachePort.getSearchCache(anyString())).thenReturn(Optional.empty());
 
             List<BusinessSummary> businesses = List.of(
-                    new BusinessSummary(1L, "카페A", "서울시 중구", 150.0, "카페"),
-                    new BusinessSummary(2L, "식당B", "서울시 중구", 300.0, "식당")
+                    new BusinessSummary(1L, "카페A", "서울시 중구", 37.5665, 126.9780, 150.0, "카페"),
+                    new BusinessSummary(2L, "식당B", "서울시 중구", 37.5670, 126.9790, 300.0, "식당")
             );
 
             when(searchPort.searchByLocation(eq(LATITUDE), eq(LONGITUDE), eq(expectedRadiusMeters), eq(0), eq(20)))
@@ -133,7 +133,7 @@ class SearchServiceTest {
             // given
             SearchRequest request = new SearchRequest(LATITUDE, LONGITUDE, 1.0, 0, 20);
             SearchResponse cachedResponse = new SearchResponse(
-                    List.of(new BusinessSummary(1L, "카페A", "서울시 중구", 150.0, "카페")),
+                    List.of(new BusinessSummary(1L, "카페A", "서울시 중구", 37.5665, 126.9780, 150.0, "카페")),
                     1L, 0, 20
             );
 
@@ -158,7 +158,7 @@ class SearchServiceTest {
             when(cachePort.getSearchCache(anyString())).thenReturn(Optional.empty());
 
             List<BusinessSummary> businesses = List.of(
-                    new BusinessSummary(1L, "카페A", "서울시 중구", 150.0, "카페")
+                    new BusinessSummary(1L, "카페A", "서울시 중구", 37.5665, 126.9780, 150.0, "카페")
             );
             when(searchPort.searchByLocation(eq(LATITUDE), eq(LONGITUDE), eq(expectedRadiusMeters), eq(0), eq(20)))
                     .thenReturn(businesses);

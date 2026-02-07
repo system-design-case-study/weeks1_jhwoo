@@ -58,7 +58,7 @@ class SearchControllerTest {
     void search_validParams_returns200() throws Exception {
         // given
         List<BusinessSummary> businesses = List.of(
-                new BusinessSummary(1L, "카페A", "서울시 중구", 150.0, "카페")
+                new BusinessSummary(1L, "카페A", "서울시 중구", 37.5665, 126.9780, 150.0, "카페")
         );
         SearchResponse response = new SearchResponse(businesses, 1, 0, 20);
         when(searchUseCase.search(any(SearchRequest.class))).thenReturn(response);

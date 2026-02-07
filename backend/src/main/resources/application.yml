@@ -42,6 +42,10 @@ spring:
   cache:
     type: redis
 
+jwt:
+  secret: proximity-jwt-secret-key-for-development-must-be-at-least-256-bits-long
+  expiration-ms: 3600000
+
 server:
   port: 8080
 

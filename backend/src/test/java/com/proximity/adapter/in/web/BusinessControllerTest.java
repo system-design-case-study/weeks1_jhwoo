@@ -13,12 +13,13 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Collections;
@@ -28,6 +29,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willDoNothing;
 import static org.mockito.BDDMockito.willThrow;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -60,6 +62,10 @@ class BusinessControllerTest {
 
     private static final Long OWNER_ID = 1L;
     private static final Long BUSINESS_ID = 100L;
+
+    private UsernamePasswordAuthenticationToken ownerAuth() {
+        return new UsernamePasswordAuthenticationToken(OWNER_ID, null, Collections.emptyList());
+    }
 
     private BusinessDetailResponse testResponse() {
         return new BusinessDetailResponse(
@@ -119,8 +125,8 @@ class BusinessControllerTest {
 
             // when & then
             mockMvc.perform(post("/api/businesses")
+                            .with(authentication(ownerAuth()))
                             .contentType(MediaType.APPLICATION_JSON)
-                            .header("X-Owner-Id", OWNER_ID)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.name").value("테스트 카페"));
@@ -135,8 +141,8 @@ class BusinessControllerTest {
 
             // when & then
             mockMvc.perform(post("/api/businesses")
+                            .with(authentication(ownerAuth()))
                             .contentType(MediaType.APPLICATION_JSON)
-                            .header("X-Owner-Id", OWNER_ID)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest());
         }
@@ -150,8 +156,8 @@ class BusinessControllerTest {
 
             // when & then
             mockMvc.perform(post("/api/businesses")
+                            .with(authentication(ownerAuth()))
                             .contentType(MediaType.APPLICATION_JSON)
-                            .header("X-Owner-Id", OWNER_ID)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest());
         }
@@ -169,8 +175,8 @@ class BusinessControllerTest {
 
             // when & then
             mockMvc.perform(post("/api/businesses")
+                            .with(authentication(ownerAuth()))
                             .contentType(MediaType.APPLICATION_JSON)
-                            .header("X-Owner-Id", OWNER_ID)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isConflict());
         }
@@ -192,8 +198,8 @@ class BusinessControllerTest {
 
             // when & then
             mockMvc.perform(put("/api/businesses/{id}/update", BUSINESS_ID)
+                            .with(authentication(ownerAuth()))
                             .contentType(MediaType.APPLICATION_JSON)
-                            .header("X-Owner-Id", OWNER_ID)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk());
         }
@@ -210,8 +216,8 @@ class BusinessControllerTest {
 
             // when & then
             mockMvc.perform(put("/api/businesses/{id}/update", BUSINESS_ID)
+                            .with(authentication(ownerAuth()))
                             .contentType(MediaType.APPLICATION_JSON)
-                            .header("X-Owner-Id", OWNER_ID)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isForbidden());
         }
@@ -229,7 +235,7 @@ class BusinessControllerTest {
 
             // when & then
             mockMvc.perform(delete("/api/businesses/{id}/delete", BUSINESS_ID)
-                            .header("X-Owner-Id", OWNER_ID))
+                            .with(authentication(ownerAuth())))
                     .andExpect(status().isNoContent());
         }
 
@@ -242,7 +248,7 @@ class BusinessControllerTest {
 
             // when & then
             mockMvc.perform(delete("/api/businesses/{id}/delete", BUSINESS_ID)
-                            .header("X-Owner-Id", OWNER_ID))
+                            .with(authentication(ownerAuth())))
                     .andExpect(status().isNotFound());
         }
     }

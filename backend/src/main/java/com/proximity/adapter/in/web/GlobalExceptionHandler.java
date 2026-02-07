@@ -3,6 +3,8 @@ package com.proximity.adapter.in.web;
 import com.proximity.application.exception.BusinessNotFoundException;
 import com.proximity.application.exception.BusinessOwnershipException;
 import com.proximity.application.exception.DuplicateBusinessException;
+import com.proximity.application.exception.DuplicateEmailException;
+import com.proximity.application.exception.InvalidCredentialsException;
 import com.proximity.application.exception.InvalidRadiusException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -44,6 +46,22 @@ public class GlobalExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
         problem.setTitle("유효하지 않은 검색 반경");
         problem.setProperty(CODE_PROPERTY, "INVALID_RADIUS");
+        return problem;
+    }
+
+    @ExceptionHandler(DuplicateEmailException.class)
+    public ProblemDetail handleDuplicateEmail(DuplicateEmailException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setTitle("중복된 이메일");
+        problem.setProperty(CODE_PROPERTY, "DUPLICATE_EMAIL");
+        return problem;
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ProblemDetail handleInvalidCredentials(InvalidCredentialsException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
+        problem.setTitle("인증 실패");
+        problem.setProperty(CODE_PROPERTY, "INVALID_CREDENTIALS");
         return problem;
     }
 

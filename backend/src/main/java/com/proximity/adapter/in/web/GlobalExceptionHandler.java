@@ -1,5 +1,6 @@
 package com.proximity.adapter.in.web;
 
+import com.proximity.application.dto.ErrorResponse;
 import com.proximity.application.exception.BusinessNotFoundException;
 import com.proximity.application.exception.BusinessOwnershipException;
 import com.proximity.application.exception.DuplicateBusinessException;
@@ -7,7 +8,7 @@ import com.proximity.application.exception.DuplicateEmailException;
 import com.proximity.application.exception.InvalidCredentialsException;
 import com.proximity.application.exception.InvalidRadiusException;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -15,65 +16,49 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    private static final String CODE_PROPERTY = "code";
-
     @ExceptionHandler(BusinessNotFoundException.class)
-    public ProblemDetail handleNotFound(BusinessNotFoundException ex) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
-        problem.setTitle("사업장을 찾을 수 없습니다");
-        problem.setProperty(CODE_PROPERTY, "BUSINESS_NOT_FOUND");
-        return problem;
+    public ResponseEntity<ErrorResponse> handleNotFound(BusinessNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse("BUSINESS_NOT_FOUND", ex.getMessage()));
     }
 
     @ExceptionHandler(DuplicateBusinessException.class)
-    public ProblemDetail handleDuplicate(DuplicateBusinessException ex) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
-        problem.setTitle("중복된 사업장");
-        problem.setProperty(CODE_PROPERTY, "DUPLICATE_BUSINESS");
-        return problem;
+    public ResponseEntity<ErrorResponse> handleDuplicate(DuplicateBusinessException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse("DUPLICATE_BUSINESS", ex.getMessage()));
     }
 
     @ExceptionHandler(BusinessOwnershipException.class)
-    public ProblemDetail handleOwnership(BusinessOwnershipException ex) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
-        problem.setTitle("권한 없음");
-        problem.setProperty(CODE_PROPERTY, "FORBIDDEN");
-        return problem;
+    public ResponseEntity<ErrorResponse> handleOwnership(BusinessOwnershipException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(new ErrorResponse("FORBIDDEN", ex.getMessage()));
     }
 
     @ExceptionHandler(InvalidRadiusException.class)
-    public ProblemDetail handleInvalidRadius(InvalidRadiusException ex) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
-        problem.setTitle("유효하지 않은 검색 반경");
-        problem.setProperty(CODE_PROPERTY, "INVALID_RADIUS");
-        return problem;
+    public ResponseEntity<ErrorResponse> handleInvalidRadius(InvalidRadiusException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse("INVALID_RADIUS", ex.getMessage()));
     }
 
     @ExceptionHandler(DuplicateEmailException.class)
-    public ProblemDetail handleDuplicateEmail(DuplicateEmailException ex) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
-        problem.setTitle("중복된 이메일");
-        problem.setProperty(CODE_PROPERTY, "DUPLICATE_EMAIL");
-        return problem;
+    public ResponseEntity<ErrorResponse> handleDuplicateEmail(DuplicateEmailException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse("DUPLICATE_EMAIL", ex.getMessage()));
     }
 
     @ExceptionHandler(InvalidCredentialsException.class)
-    public ProblemDetail handleInvalidCredentials(InvalidCredentialsException ex) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
-        problem.setTitle("인증 실패");
-        problem.setProperty(CODE_PROPERTY, "INVALID_CREDENTIALS");
-        return problem;
+    public ResponseEntity<ErrorResponse> handleInvalidCredentials(InvalidCredentialsException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ErrorResponse("INVALID_CREDENTIALS", ex.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ProblemDetail handleValidation(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
         String message = ex.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .reduce((a, b) -> a + ", " + b)
                 .orElse("유효하지 않은 요청입니다");
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, message);
-        problem.setTitle("유효성 검증 실패");
-        problem.setProperty(CODE_PROPERTY, "INVALID_PARAMETER");
-        return problem;
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse("INVALID_PARAMETER", message));
     }
 }

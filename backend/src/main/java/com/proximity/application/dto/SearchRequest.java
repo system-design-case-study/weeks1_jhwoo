@@ -1,5 +1,7 @@
 package com.proximity.application.dto;
 
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -7,13 +9,13 @@ import jakarta.validation.constraints.NotNull;
 public record SearchRequest(
 
         @NotNull(message = "위도는 필수 값입니다")
-        @Min(value = -90, message = "위도는 -90 이상이어야 합니다")
-        @Max(value = 90, message = "위도는 90 이하여야 합니다")
+        @DecimalMin(value = "-90", message = "위도는 -90 이상이어야 합니다")
+        @DecimalMax(value = "90", message = "위도는 90 이하여야 합니다")
         Double latitude,
 
         @NotNull(message = "경도는 필수 값입니다")
-        @Min(value = -180, message = "경도는 -180 이상이어야 합니다")
-        @Max(value = 180, message = "경도는 180 이하여야 합니다")
+        @DecimalMin(value = "-180", message = "경도는 -180 이상이어야 합니다")
+        @DecimalMax(value = "180", message = "경도는 180 이하여야 합니다")
         Double longitude,
 
         @NotNull(message = "검색 반경은 필수 값입니다")

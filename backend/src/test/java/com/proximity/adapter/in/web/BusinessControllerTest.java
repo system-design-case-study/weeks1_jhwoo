@@ -29,6 +29,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willDoNothing;
 import static org.mockito.BDDMockito.willThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -65,6 +66,40 @@ class BusinessControllerTest {
                 BUSINESS_ID, "테스트 카페", "서울시 강남구", 37.5665, 126.9780,
                 "02-1234-5678", "카페", OWNER_ID,
                 Collections.emptyList(), Collections.emptyList(), null, null);
+    }
+
+    @Nested
+    @DisplayName("GET /api/businesses/{id}")
+    class GetBusinessDetail {
+
+        @Test
+        @DisplayName("존재하는 사업장 → 200 OK (FR-005)")
+        void getDetailSuccess() throws Exception {
+            // given
+            given(businessUseCase.getDetail(BUSINESS_ID)).willReturn(testResponse());
+
+            // when & then
+            mockMvc.perform(get("/api/businesses/{id}", BUSINESS_ID))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id").value(BUSINESS_ID))
+                    .andExpect(jsonPath("$.name").value("테스트 카페"))
+                    .andExpect(jsonPath("$.address").value("서울시 강남구"))
+                    .andExpect(jsonPath("$.latitude").value(37.5665))
+                    .andExpect(jsonPath("$.longitude").value(126.9780));
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 사업장 → 404 Not Found (EC-5)")
+        void getDetailNotFound() throws Exception {
+            // given
+            given(businessUseCase.getDetail(99999L))
+                    .willThrow(new BusinessNotFoundException(99999L));
+
+            // when & then
+            mockMvc.perform(get("/api/businesses/{id}", 99999L))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value("BUSINESS_NOT_FOUND"));
+        }
     }
 
     @Nested

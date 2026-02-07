@@ -125,16 +125,6 @@ services:
     networks:
       - proximity-net
 
-  frontend:
-    image: node:20-alpine
-    container_name: proximity-frontend
-    working_dir: /app
-    volumes:
-      - ./frontend:/app
-    command: ["sh", "-c", "echo 'Frontend placeholder - implement in Phase 10' && sleep infinity"]
-    networks:
-      - proximity-net
-
   nginx:
     image: nginx:alpine
     container_name: proximity-nginx
@@ -142,6 +132,7 @@ services:
       - "80:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./frontend:/usr/share/nginx/html:ro
     depends_on:
       - backend
     networks:

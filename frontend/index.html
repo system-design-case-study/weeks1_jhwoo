@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proximity Service - 주변 사업장 검색</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin="">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+          crossorigin=""></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <div id="map-container">
+      <div id="map"></div>
+      <div id="map-controls">
+        <button id="btn-geohash-toggle" class="map-btn" title="Geohash 셀 시각화">
+          <span>#</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="side-panel">
+      <header id="panel-header">
+        <h1>Proximity Service</h1>
+        <div id="mode-toggle">
+          <button id="btn-search-mode" class="mode-btn active">검색</button>
+          <button id="btn-admin-mode" class="mode-btn">관리</button>
+        </div>
+      </header>
+
+      <div id="search-view" class="panel-view active">
+        <div id="search-controls">
+          <label for="radius-select">검색 반경</label>
+          <select id="radius-select">
+            <option value="500">0.5 km</option>
+            <option value="1000" selected>1 km</option>
+            <option value="2000">2 km</option>
+            <option value="5000">5 km</option>
+            <option value="20000">20 km</option>
+          </select>
+          <button id="btn-search">검색</button>
+        </div>
+        <div id="search-info"></div>
+        <ul id="search-results"></ul>
+      </div>
+
+      <div id="detail-view" class="panel-view">
+        <button id="btn-back-to-list" class="back-btn">&larr; 목록으로</button>
+        <div id="detail-content"></div>
+      </div>
+
+      <div id="admin-view" class="panel-view">
+        <div id="auth-section">
+          <div id="auth-forms">
+            <div id="login-form-wrapper">
+              <h3>로그인</h3>
+              <form id="login-form">
+                <input type="email" id="login-email" placeholder="이메일" required>
+                <input type="password" id="login-password" placeholder="비밀번호" required>
+                <button type="submit">로그인</button>
+              </form>
+              <p class="auth-switch">계정이 없으신가요? <a href="#" id="show-signup">회원가입</a></p>
+            </div>
+            <div id="signup-form-wrapper" class="hidden">
+              <h3>회원가입</h3>
+              <form id="signup-form">
+                <input type="text" id="signup-name" placeholder="이름" required>
+                <input type="email" id="signup-email" placeholder="이메일" required>
+                <input type="password" id="signup-password" placeholder="비밀번호" required>
+                <button type="submit">회원가입</button>
+              </form>
+              <p class="auth-switch">이미 계정이 있으신가요? <a href="#" id="show-login">로그인</a></p>
+            </div>
+          </div>
+          <div id="logged-in-info" class="hidden">
+            <p><strong id="owner-name"></strong>님 환영합니다</p>
+            <button id="btn-logout">로그아웃</button>
+          </div>
+        </div>
+        <div id="admin-message"></div>
+
+        <div id="business-form-section" class="hidden">
+          <h3 id="form-title">사업장 등록</h3>
+          <form id="business-form">
+            <input type="hidden" id="biz-id">
+            <input type="text" id="biz-name" placeholder="사업장 이름" required>
+            <input type="text" id="biz-address" placeholder="주소" required>
+            <div class="coord-group">
+              <input type="number" id="biz-latitude" placeholder="위도" step="any" required readonly>
+              <input type="number" id="biz-longitude" placeholder="경도" step="any" required readonly>
+            </div>
+            <p class="hint">지도를 클릭하여 위치를 선택하세요</p>
+            <input type="text" id="biz-phone" placeholder="전화번호">
+            <input type="text" id="biz-category" placeholder="카테고리">
+            <div id="form-actions">
+              <button type="submit" id="btn-submit-biz">등록</button>
+              <button type="button" id="btn-cancel-biz">취소</button>
+            </div>
+          </form>
+        </div>
+
+        <div id="admin-controls" class="hidden">
+          <button id="btn-new-business">새 사업장 등록</button>
+          <p class="hint">지도에서 기존 마커를 클릭하여 수정/삭제할 수 있습니다</p>
+        </div>
+      </div>
+
+      <div id="toast" class="hidden"></div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/geolocation.js"></script>
+  <script src="js/search.js"></script>
+  <script src="js/detail.js"></script>
+  <script src="js/admin.js"></script>
+  <script src="js/geohash-viz.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

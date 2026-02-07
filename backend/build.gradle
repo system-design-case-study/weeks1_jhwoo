@@ -1,0 +1,83 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.4.2'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.proximity'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+configurations {
+    jooqCodegen
+}
+
+def jooqVersion = '3.19.18'
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    implementation 'org.hibernate.orm:hibernate-spatial'
+
+    implementation 'org.jooq:jooq'
+
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-database-postgresql'
+
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+
+    runtimeOnly 'org.postgresql:postgresql'
+
+    jooqCodegen "org.jooq:jooq:${jooqVersion}"
+    jooqCodegen "org.jooq:jooq-codegen:${jooqVersion}"
+    jooqCodegen "org.jooq:jooq-meta:${jooqVersion}"
+    jooqCodegen 'org.postgresql:postgresql:42.7.5'
+    jooqCodegen 'org.testcontainers:postgresql:1.20.4'
+    jooqCodegen 'org.flywaydb:flyway-core:11.3.2'
+    jooqCodegen 'org.flywaydb:flyway-database-postgresql:11.3.2'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'org.testcontainers:junit-jupiter:1.20.4'
+    testImplementation 'org.testcontainers:postgresql:1.20.4'
+    testImplementation "org.jooq:jooq-codegen:${jooqVersion}"
+    testImplementation "org.jooq:jooq-meta:${jooqVersion}"
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src/generated/java'
+        }
+    }
+}
+
+tasks.register('generateJooq', JavaExec) {
+    description = 'Testcontainers 기반 jOOQ 코드 생성'
+    group = 'jooq'
+    mainClass = 'com.proximity.codegen.JooqCodeGenerator'
+    classpath = configurations.jooqCodegen + sourceSets.test.runtimeClasspath
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

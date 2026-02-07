@@ -1,3 +1,15 @@
 .claude
 .idea
 .specify
+
+# Gradle
+backend/.gradle/
+backend/build/
+backend/src/generated/
+
+# Docker volumes
+postgres-primary-data/
+postgres-replica-*-data/
+redis-data/
+prometheus-data/
+grafana-data/

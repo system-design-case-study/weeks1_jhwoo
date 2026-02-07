@@ -1,6 +1,7 @@
 .claude
 .idea
 .specify
+docs/
 
 # Gradle
 backend/.gradle/

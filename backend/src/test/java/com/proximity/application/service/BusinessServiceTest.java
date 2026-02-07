@@ -59,6 +59,60 @@ class BusinessServiceTest {
     }
 
     @Nested
+    @DisplayName("getDetail")
+    class GetDetail {
+
+        @Test
+        @DisplayName("Cache Hit 시 BusinessReadPort를 호출하지 않는다")
+        void getDetail_cacheHit_doesNotCallReadPort() {
+            // given
+            BusinessDetailResponse cached = new BusinessDetailResponse(
+                    BUSINESS_ID, "테스트 카페", "서울시 강남구", 37.5665, 126.9780,
+                    "02-1234-5678", "카페", OWNER_ID, null, null, null, null);
+
+            given(cachePort.getBusinessCache(BUSINESS_ID)).willReturn(Optional.of(cached));
+
+            // when
+            BusinessDetailResponse result = businessService.getDetail(BUSINESS_ID);
+
+            // then
+            assertThat(result).isEqualTo(cached);
+            then(businessReadPort).should(never()).findById(anyLong());
+        }
+
+        @Test
+        @DisplayName("Cache Miss 시 BusinessReadPort 호출 후 결과를 캐싱한다")
+        void getDetail_cacheMiss_callsReadPortAndCaches() {
+            // given
+            BusinessDetailResponse fromDb = new BusinessDetailResponse(
+                    BUSINESS_ID, "테스트 카페", "서울시 강남구", 37.5665, 126.9780,
+                    "02-1234-5678", "카페", OWNER_ID, null, null, null, null);
+
+            given(cachePort.getBusinessCache(BUSINESS_ID)).willReturn(Optional.empty());
+            given(businessReadPort.findById(BUSINESS_ID)).willReturn(Optional.of(fromDb));
+
+            // when
+            BusinessDetailResponse result = businessService.getDetail(BUSINESS_ID);
+
+            // then
+            assertThat(result).isEqualTo(fromDb);
+            then(cachePort).should().putBusinessCache(BUSINESS_ID, fromDb);
+        }
+
+        @Test
+        @DisplayName("Cache Miss + DB에도 없으면 BusinessNotFoundException")
+        void getDetail_notFound_throwsException() {
+            // given
+            given(cachePort.getBusinessCache(BUSINESS_ID)).willReturn(Optional.empty());
+            given(businessReadPort.findById(BUSINESS_ID)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> businessService.getDetail(BUSINESS_ID))
+                    .isInstanceOf(BusinessNotFoundException.class);
+        }
+    }
+
+    @Nested
     @DisplayName("create")
     class Create {
 

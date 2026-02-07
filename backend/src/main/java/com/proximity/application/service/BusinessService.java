@@ -38,8 +38,13 @@ public class BusinessService implements BusinessUseCase {
     @Override
     @Transactional(readOnly = true)
     public BusinessDetailResponse getDetail(Long id) {
-        return businessReadPort.findById(id)
-                .orElseThrow(() -> new BusinessNotFoundException(id));
+        return cachePort.getBusinessCache(id)
+                .orElseGet(() -> {
+                    BusinessDetailResponse response = businessReadPort.findById(id)
+                            .orElseThrow(() -> new BusinessNotFoundException(id));
+                    cachePort.putBusinessCache(id, response);
+                    return response;
+                });
     }
 
     @Override

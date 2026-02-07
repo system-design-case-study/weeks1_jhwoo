@@ -5,11 +5,13 @@ import com.proximity.application.dto.SearchRequest;
 import com.proximity.application.dto.SearchResponse;
 import com.proximity.application.exception.InvalidRadiusException;
 import com.proximity.application.port.in.SearchUseCase;
+import com.proximity.application.port.out.CachePort;
 import com.proximity.application.port.out.SearchPort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -20,14 +22,24 @@ public class SearchService implements SearchUseCase {
     private static final double KM_TO_METERS = 1000.0;
 
     private final SearchPort searchPort;
+    private final CachePort cachePort;
 
-    public SearchService(SearchPort searchPort) {
+    public SearchService(SearchPort searchPort, CachePort cachePort) {
         this.searchPort = searchPort;
+        this.cachePort = cachePort;
     }
 
     @Override
     public SearchResponse search(SearchRequest request) {
         validateRadius(request.radius());
+
+        String cacheKey = GridCacheKeyGenerator.searchKey(
+                request.latitude(), request.longitude(), request.radius());
+
+        Optional<SearchResponse> cached = cachePort.getSearchCache(cacheKey);
+        if (cached.isPresent()) {
+            return cached.get();
+        }
 
         double radiusMeters = request.radius() * KM_TO_METERS;
 
@@ -45,7 +57,9 @@ public class SearchService implements SearchUseCase {
                 radiusMeters
         );
 
-        return new SearchResponse(businesses, total, request.page(), request.size());
+        SearchResponse response = new SearchResponse(businesses, total, request.page(), request.size());
+        cachePort.putSearchCache(cacheKey, response);
+        return response;
     }
 
     private void validateRadius(double radiusKm) {

@@ -26,7 +26,7 @@ public class BusinessHoursJpaEntity {
     private BusinessJpaEntity business;
 
     @Column(name = "day_of_week", nullable = false)
-    private int dayOfWeek;
+    private short dayOfWeek;
 
     @Column(name = "open_time")
     private LocalTime openTime;
@@ -50,7 +50,7 @@ public class BusinessHoursJpaEntity {
     public static BusinessHoursJpaEntity fromDomain(BusinessHours hours) {
         BusinessHoursJpaEntity entity = new BusinessHoursJpaEntity();
         entity.id = hours.getId();
-        entity.dayOfWeek = hours.getDayOfWeek();
+        entity.dayOfWeek = (short) hours.getDayOfWeek();
         entity.openTime = hours.getOpenTime();
         entity.closeTime = hours.getCloseTime();
         entity.closed = hours.isClosed();
@@ -61,7 +61,7 @@ public class BusinessHoursJpaEntity {
 
     public Long getId() { return id; }
     public BusinessJpaEntity getBusiness() { return business; }
-    public int getDayOfWeek() { return dayOfWeek; }
+    public short getDayOfWeek() { return dayOfWeek; }
     public LocalTime getOpenTime() { return openTime; }
     public LocalTime getCloseTime() { return closeTime; }
     public boolean isClosed() { return closed; }

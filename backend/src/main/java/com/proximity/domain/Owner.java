@@ -18,6 +18,8 @@ public class Owner {
         this.email = email;
         this.passwordHash = passwordHash;
         this.name = name;
+        this.createdAt = OffsetDateTime.now();
+        this.updatedAt = OffsetDateTime.now();
     }
 
     public Long getId() { return id; }

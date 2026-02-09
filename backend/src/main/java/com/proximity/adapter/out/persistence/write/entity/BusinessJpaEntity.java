@@ -17,6 +17,7 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.PrecisionModel;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,10 +44,10 @@ public class BusinessJpaEntity {
     private String address;
 
     @Column(nullable = false, precision = 9, scale = 6)
-    private double latitude;
+    private BigDecimal latitude;
 
     @Column(nullable = false, precision = 9, scale = 6)
-    private double longitude;
+    private BigDecimal longitude;
 
     @Column(columnDefinition = "geography(Point,4326)", nullable = false)
     private Point location;
@@ -73,7 +74,7 @@ public class BusinessJpaEntity {
     }
 
     public Business toDomain() {
-        Business business = new Business(name, address, latitude, longitude, phone, category, ownerId);
+        Business business = new Business(name, address, latitude.doubleValue(), longitude.doubleValue(), phone, category, ownerId);
         business.setId(id);
         business.setCreatedAt(createdAt);
         business.setUpdatedAt(updatedAt);
@@ -101,10 +102,10 @@ public class BusinessJpaEntity {
         entity.ownerId = business.getOwnerId();
         entity.name = business.getName();
         entity.address = business.getAddress();
-        entity.latitude = business.getLatitude();
-        entity.longitude = business.getLongitude();
+        entity.latitude = BigDecimal.valueOf(business.getLatitude());
+        entity.longitude = BigDecimal.valueOf(business.getLongitude());
         entity.location = GEOMETRY_FACTORY.createPoint(
-                new Coordinate(business.getLongitude(), business.getLatitude()));
+                new Coordinate(entity.longitude.doubleValue(), entity.latitude.doubleValue()));
         entity.phone = business.getPhone();
         entity.category = business.getCategory();
         entity.createdAt = business.getCreatedAt();
@@ -133,8 +134,8 @@ public class BusinessJpaEntity {
     public Long getOwnerId() { return ownerId; }
     public String getName() { return name; }
     public String getAddress() { return address; }
-    public double getLatitude() { return latitude; }
-    public double getLongitude() { return longitude; }
+    public BigDecimal getLatitude() { return latitude; }
+    public BigDecimal getLongitude() { return longitude; }
     public Point getLocation() { return location; }
     public String getPhone() { return phone; }
     public String getCategory() { return category; }

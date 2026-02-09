@@ -36,6 +36,8 @@ public class Business {
         this.phone = phone;
         this.category = category;
         this.ownerId = ownerId;
+        this.createdAt = OffsetDateTime.now();
+        this.updatedAt = OffsetDateTime.now();
     }
 
     public void updateLocation(double latitude, double longitude) {

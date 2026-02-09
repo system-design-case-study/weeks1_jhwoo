@@ -7,7 +7,6 @@ public final class GridCacheKeyGenerator {
 
     private static final double GRID_SIZE = 0.01;
     private static final String SEARCH_PREFIX = "search:";
-    private static final String BOUNDS_PREFIX = "bounds:";
     private static final String BUSINESS_PREFIX = "business:";
 
     private GridCacheKeyGenerator() {
@@ -21,15 +20,6 @@ public final class GridCacheKeyGenerator {
         double roundedLat = roundToGrid(lat);
         double roundedLng = roundToGrid(lng);
         return SEARCH_PREFIX + roundedLat + ":" + roundedLng + ":" + radiusKm + ":" + page + ":" + size;
-    }
-
-    public static String boundsKey(double swLat, double swLng,
-                                    double neLat, double neLng, int size) {
-        double rSwLat = roundToGrid(swLat);
-        double rSwLng = roundToGrid(swLng);
-        double rNeLat = roundToGrid(neLat);
-        double rNeLng = roundToGrid(neLng);
-        return BOUNDS_PREFIX + rSwLat + ":" + rSwLng + ":" + rNeLat + ":" + rNeLng + ":" + size;
     }
 
     public static String businessKey(Long id) {

@@ -1,7 +1,5 @@
 package com.proximity.adapter.in.web;
 
-import com.proximity.application.dto.BoundsSearchRequest;
-import com.proximity.application.dto.BoundsSearchResponse;
 import com.proximity.application.dto.SearchRequest;
 import com.proximity.application.dto.SearchResponse;
 import com.proximity.application.port.in.SearchUseCase;
@@ -24,12 +22,6 @@ public class SearchController {
     @GetMapping
     public ResponseEntity<SearchResponse> search(@Valid SearchRequest request) {
         SearchResponse response = searchUseCase.search(request);
-        return ResponseEntity.ok(response);
-    }
-
-    @GetMapping("/bounds")
-    public ResponseEntity<BoundsSearchResponse> searchByBounds(@Valid BoundsSearchRequest request) {
-        BoundsSearchResponse response = searchUseCase.searchByBounds(request);
         return ResponseEntity.ok(response);
     }
 }

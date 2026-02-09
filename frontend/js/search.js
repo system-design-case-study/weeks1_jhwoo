@@ -1,6 +1,4 @@
 const Search = (() => {
-  const VIEWPORT_SIZE = 200;
-  const VIEWPORT_DEBOUNCE_MS = 500;
   const DEBOUNCE_MS = 300;
 
   const RADIUS_ZOOM_MAP = {
@@ -14,8 +12,6 @@ const Search = (() => {
   let allResults = [];
   let lastResults = [];
   let debounceTimer = null;
-  let viewportTimer = null;
-  let skipNextViewportLoad = false;
 
   function init() {
     document.getElementById('btn-search').addEventListener('click', doSearch);
@@ -23,11 +19,6 @@ const Search = (() => {
     document.getElementById('keyword-input').addEventListener('input', onKeywordInput);
     document.getElementById('category-filter').addEventListener('change', () => applyFiltersAndSort());
     document.getElementById('sort-select').addEventListener('change', () => applyFiltersAndSort());
-
-    const map = MapModule.getMap();
-    if (map) {
-      map.on('moveend', onViewportChange);
-    }
   }
 
   function onKeywordInput() {
@@ -37,28 +28,24 @@ const Search = (() => {
     }, DEBOUNCE_MS);
   }
 
-  function onViewportChange() {
-    if (skipNextViewportLoad) {
-      skipNextViewportLoad = false;
-      return;
-    }
-    clearTimeout(viewportTimer);
-    viewportTimer = setTimeout(() => {
-      loadViewport();
-    }, VIEWPORT_DEBOUNCE_MS);
+  function onRadiusChange() {
+    doSearch();
   }
 
-  async function loadViewport() {
-    const bounds = MapModule.getBounds();
-    if (!bounds) return;
-
-    const sw = bounds.getSouthWest();
-    const ne = bounds.getNorthEast();
+  async function doSearch() {
+    const pos = Geolocation.getPosition();
+    const radiusMeters = parseInt(document.getElementById('radius-select').value, 10);
+    const radiusKm = radiusMeters / 1000;
+    const zoomLevel = radiusToZoom(radiusMeters);
 
     MapModule.clearMarkers();
+    MapModule.clearCircles();
     document.getElementById('search-info').textContent = '검색 중...';
 
-    const result = await Api.searchByBounds(sw.lat, sw.lng, ne.lat, ne.lng, VIEWPORT_SIZE);
+    MapModule.setView(pos.lat, pos.lng, zoomLevel);
+    MapModule.addCircle(pos.lat, pos.lng, radiusMeters);
+
+    const result = await Api.search(pos.lat, pos.lng, radiusKm);
 
     if (!result.ok) {
       App.showToast(result.message);
@@ -70,31 +57,14 @@ const Search = (() => {
 
     if (businesses.length === 0) {
       renderEmptyResults();
-      document.getElementById('search-info').textContent = '이 영역에 사업장이 없습니다';
+      document.getElementById('search-info').textContent =
+        '주변에 등록된 사업장이 없습니다. 반경을 넓혀보세요.';
       return;
     }
 
     allResults = businesses;
     extractCategories(allResults);
     applyFiltersAndSort();
-  }
-
-  function doSearch() {
-    const pos = Geolocation.getPosition();
-    const radiusMeters = parseInt(document.getElementById('radius-select').value, 10);
-    const zoomLevel = radiusToZoom(radiusMeters);
-
-    MapModule.clearCircles();
-    MapModule.setView(pos.lat, pos.lng, zoomLevel);
-  }
-
-  function onRadiusChange() {
-    const pos = Geolocation.getPosition();
-    const radiusMeters = parseInt(document.getElementById('radius-select').value, 10);
-    const zoomLevel = radiusToZoom(radiusMeters);
-
-    MapModule.clearCircles();
-    MapModule.setView(pos.lat, pos.lng, zoomLevel);
   }
 
   function radiusToZoom(radiusMeters) {
@@ -201,7 +171,7 @@ const Search = (() => {
     const ul = document.getElementById('search-results');
     ul.innerHTML = `
       <li class="empty-message">
-        이 영역에 등록된 사업장이 없습니다. 지도를 이동해보세요.
+        주변에 등록된 사업장이 없습니다. 반경을 넓혀보세요.
       </li>
     `;
     allResults = [];
@@ -215,8 +185,6 @@ const Search = (() => {
 
   function onListItemClick(biz) {
     highlightListItem(biz.id);
-
-    skipNextViewportLoad = true;
     MapModule.flyTo(biz.latitude, biz.longitude);
 
     setTimeout(() => {
@@ -251,5 +219,5 @@ const Search = (() => {
     return div.innerHTML;
   }
 
-  return { init, doSearch, loadViewport, removeFromList, highlightListItem, getLastResults, escapeHtml };
+  return { init, doSearch, removeFromList, highlightListItem, getLastResults, escapeHtml };
 })();

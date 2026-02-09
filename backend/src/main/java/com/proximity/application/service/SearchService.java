@@ -1,7 +1,5 @@
 package com.proximity.application.service;
 
-import com.proximity.application.dto.BoundsSearchRequest;
-import com.proximity.application.dto.BoundsSearchResponse;
 import com.proximity.application.dto.BusinessSummary;
 import com.proximity.application.dto.SearchRequest;
 import com.proximity.application.dto.SearchResponse;
@@ -81,40 +79,6 @@ public class SearchService implements SearchUseCase {
         SearchResponse response = new SearchResponse(businesses, total, request.page(), request.size());
         cachePort.putSearchCache(cacheKey, response);
         return response;
-    }
-
-    @Override
-    public BoundsSearchResponse searchByBounds(BoundsSearchRequest request) {
-        double centerLat = (request.swLat() + request.neLat()) / 2.0;
-        double centerLng = (request.swLng() + request.neLng()) / 2.0;
-
-        String cacheKey = GridCacheKeyGenerator.boundsKey(
-                request.swLat(), request.swLng(),
-                request.neLat(), request.neLng(),
-                request.size());
-
-        Optional<SearchResponse> cached = cachePort.getSearchCache(cacheKey);
-        if (cached.isPresent()) {
-            cacheHitRatioHolder.recordHit();
-            SearchResponse sr = cached.get();
-            return new BoundsSearchResponse(sr.businesses(), sr.businesses().size());
-        }
-
-        cacheHitRatioHolder.recordMiss();
-
-        List<BusinessSummary> businesses = searchPort.searchByBounds(
-                request.swLat(), request.swLng(),
-                request.neLat(), request.neLng(),
-                centerLat, centerLng,
-                request.size()
-        );
-
-        searchResultCountSummary.record(businesses.size());
-
-        SearchResponse forCache = new SearchResponse(businesses, businesses.size(), 0, request.size());
-        cachePort.putSearchCache(cacheKey, forCache);
-
-        return new BoundsSearchResponse(businesses, businesses.size());
     }
 
     private void validateRadius(double radiusKm) {

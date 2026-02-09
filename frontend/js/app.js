@@ -18,7 +18,7 @@ const App = (() => {
 
     MapModule.setMapDoubleClickHandler((latlng) => {
       Geolocation.setPosition(latlng.lat, latlng.lng);
-      Search.doSearch();
+      MapModule.setView(latlng.lat, latlng.lng);
       App.showToast('선택한 위치 기준으로 검색합니다.');
     });
   }

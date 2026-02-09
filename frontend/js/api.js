@@ -143,6 +143,10 @@ const Api = (() => {
     return get('/search', { latitude, longitude, radius, page, size });
   }
 
+  async function searchByBounds(swLat, swLng, neLat, neLng, size) {
+    return get('/search/bounds', { swLat, swLng, neLat, neLng, size });
+  }
+
   async function getBusinessDetail(id) {
     return get(`/businesses/${id}`);
   }
@@ -178,6 +182,7 @@ const Api = (() => {
 
   return {
     search,
+    searchByBounds,
     getBusinessDetail,
     createBusiness,
     updateBusiness,

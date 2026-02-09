@@ -1,20 +1,33 @@
 const Search = (() => {
-  const PAGE_SIZE = 50;
-  const MAX_MARKERS = 2000;
+  const VIEWPORT_SIZE = 200;
+  const VIEWPORT_DEBOUNCE_MS = 500;
   const DEBOUNCE_MS = 300;
+
+  const RADIUS_ZOOM_MAP = {
+    500: 16,
+    1000: 15,
+    2000: 14,
+    5000: 13,
+    20000: 11,
+  };
 
   let allResults = [];
   let lastResults = [];
   let debounceTimer = null;
-  let lastRadiusLabel = '';
-  let lastTotal = 0;
+  let viewportTimer = null;
+  let skipNextViewportLoad = false;
 
   function init() {
     document.getElementById('btn-search').addEventListener('click', doSearch);
-    document.getElementById('radius-select').addEventListener('change', doSearch);
+    document.getElementById('radius-select').addEventListener('change', onRadiusChange);
     document.getElementById('keyword-input').addEventListener('input', onKeywordInput);
     document.getElementById('category-filter').addEventListener('change', () => applyFiltersAndSort());
     document.getElementById('sort-select').addEventListener('change', () => applyFiltersAndSort());
+
+    const map = MapModule.getMap();
+    if (map) {
+      map.on('moveend', onViewportChange);
+    }
   }
 
   function onKeywordInput() {
@@ -24,65 +37,68 @@ const Search = (() => {
     }, DEBOUNCE_MS);
   }
 
-  async function doSearch() {
-    const pos = Geolocation.getPosition();
-    const radiusMeters = parseInt(document.getElementById('radius-select').value, 10);
-    const radiusKm = radiusMeters / 1000;
-    lastRadiusLabel = radiusKm >= 1 ? radiusKm + 'km' : radiusMeters + 'm';
+  function onViewportChange() {
+    if (skipNextViewportLoad) {
+      skipNextViewportLoad = false;
+      return;
+    }
+    clearTimeout(viewportTimer);
+    viewportTimer = setTimeout(() => {
+      loadViewport();
+    }, VIEWPORT_DEBOUNCE_MS);
+  }
+
+  async function loadViewport() {
+    const bounds = MapModule.getBounds();
+    if (!bounds) return;
+
+    const sw = bounds.getSouthWest();
+    const ne = bounds.getNorthEast();
 
     MapModule.clearMarkers();
-    MapModule.clearCircles();
-    const circle = MapModule.addCircle(pos.lat, pos.lng, radiusMeters);
-    MapModule.fitBoundsToCircle(circle);
-    allResults = [];
-    lastResults = [];
-
     document.getElementById('search-info').textContent = '검색 중...';
 
-    const firstResult = await Api.search(pos.lat, pos.lng, radiusKm, 0, PAGE_SIZE);
+    const result = await Api.searchByBounds(sw.lat, sw.lng, ne.lat, ne.lng, VIEWPORT_SIZE);
 
-    if (!firstResult.ok) {
-      App.showToast(firstResult.message);
+    if (!result.ok) {
+      App.showToast(result.message);
       renderEmptyResults();
       return;
     }
 
-    const total = firstResult.data.total || 0;
-    lastTotal = total;
-    const firstPage = firstResult.data.businesses || [];
+    const businesses = result.data.businesses || [];
 
-    if (total === 0) {
+    if (businesses.length === 0) {
       renderEmptyResults();
-      document.getElementById('search-info').textContent =
-        `반경 ${lastRadiusLabel} 내 결과 없음`;
+      document.getElementById('search-info').textContent = '이 영역에 사업장이 없습니다';
       return;
     }
 
-    allResults = firstPage;
-
-    const loadTotal = Math.min(total, MAX_MARKERS);
-    const remainingPages = Math.ceil(loadTotal / PAGE_SIZE) - 1;
-
-    if (remainingPages > 0) {
-      const CONCURRENT = 5;
-      for (let i = 1; i <= remainingPages; i += CONCURRENT) {
-        const batch = [];
-        for (let p = i; p < i + CONCURRENT && p <= remainingPages; p++) {
-          batch.push(Api.search(pos.lat, pos.lng, radiusKm, p, PAGE_SIZE));
-        }
-        const results = await Promise.all(batch);
-        for (const r of results) {
-          if (r.ok && r.data.businesses) {
-            allResults = allResults.concat(r.data.businesses);
-          }
-        }
-        document.getElementById('search-info').textContent =
-          `반경 ${lastRadiusLabel} 내 ${total.toLocaleString()}개 사업장 (${allResults.length}개 로딩 중...)`;
-      }
-    }
-
+    allResults = businesses;
     extractCategories(allResults);
     applyFiltersAndSort();
+  }
+
+  function doSearch() {
+    const pos = Geolocation.getPosition();
+    const radiusMeters = parseInt(document.getElementById('radius-select').value, 10);
+    const zoomLevel = radiusToZoom(radiusMeters);
+
+    MapModule.clearCircles();
+    MapModule.setView(pos.lat, pos.lng, zoomLevel);
+  }
+
+  function onRadiusChange() {
+    const pos = Geolocation.getPosition();
+    const radiusMeters = parseInt(document.getElementById('radius-select').value, 10);
+    const zoomLevel = radiusToZoom(radiusMeters);
+
+    MapModule.clearCircles();
+    MapModule.setView(pos.lat, pos.lng, zoomLevel);
+  }
+
+  function radiusToZoom(radiusMeters) {
+    return RADIUS_ZOOM_MAP[radiusMeters] || 14;
   }
 
   function applyFiltersAndSort() {
@@ -102,13 +118,12 @@ const Search = (() => {
     addMarkers(lastResults, pos);
     renderResultList(lastResults);
 
-    const suffix = lastTotal > MAX_MARKERS ? ` (최대 ${MAX_MARKERS.toLocaleString()}개 표시)` : '';
     if (lastResults.length < allResults.length) {
       document.getElementById('search-info').textContent =
-        `반경 ${lastRadiusLabel} 내 ${lastTotal.toLocaleString()}개 사업장 (${lastResults.length}개 표시)${suffix}`;
+        `${allResults.length}개 사업장 (${lastResults.length}개 표시)`;
     } else {
       document.getElementById('search-info').textContent =
-        `반경 ${lastRadiusLabel} 내 ${lastTotal.toLocaleString()}개 사업장${suffix}`;
+        `${allResults.length}개 사업장`;
     }
   }
 
@@ -186,7 +201,7 @@ const Search = (() => {
     const ul = document.getElementById('search-results');
     ul.innerHTML = `
       <li class="empty-message">
-        주변에 등록된 사업장이 없습니다. 반경을 넓혀보세요.
+        이 영역에 등록된 사업장이 없습니다. 지도를 이동해보세요.
       </li>
     `;
     allResults = [];
@@ -200,6 +215,15 @@ const Search = (() => {
 
   function onListItemClick(biz) {
     highlightListItem(biz.id);
+
+    skipNextViewportLoad = true;
+    MapModule.flyTo(biz.latitude, biz.longitude);
+
+    setTimeout(() => {
+      const marker = MapModule.findMarkerById(biz.id);
+      MapModule.openMarkerPopup(marker);
+    }, 900);
+
     Detail.show(biz.id);
   }
 
@@ -227,5 +251,5 @@ const Search = (() => {
     return div.innerHTML;
   }
 
-  return { init, doSearch, removeFromList, highlightListItem, getLastResults, escapeHtml };
+  return { init, doSearch, loadViewport, removeFromList, highlightListItem, getLastResults, escapeHtml };
 })();

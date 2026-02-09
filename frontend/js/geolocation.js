@@ -69,10 +69,7 @@ const Geolocation = (() => {
     }
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        onSuccess(position);
-        Search.doSearch();
-      },
+      onSuccess,
       onError,
       { enableHighAccuracy: true, timeout: TIMEOUT_MS, maximumAge: 0 }
     );

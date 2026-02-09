@@ -167,6 +167,28 @@ const MapModule = (() => {
     }
   }
 
+  function flyTo(lat, lng, zoom) {
+    if (map) {
+      map.flyTo([lat, lng], zoom || map.getZoom(), { duration: 0.8 });
+    }
+  }
+
+  function findMarkerById(businessId) {
+    let found = null;
+    markersLayer.eachLayer(layer => {
+      if (layer.businessData && layer.businessData.id === businessId) {
+        found = layer;
+      }
+    });
+    return found;
+  }
+
+  function openMarkerPopup(marker) {
+    if (marker) {
+      marker.openPopup();
+    }
+  }
+
   function getZoom() {
     return map ? map.getZoom() : DEFAULT_ZOOM;
   }
@@ -197,6 +219,9 @@ const MapModule = (() => {
     toggleGeohash,
     setTempMarker,
     clearTempMarker,
+    flyTo,
+    findMarkerById,
+    openMarkerPopup,
     getZoom,
     getBounds,
     setMapDoubleClickHandler,

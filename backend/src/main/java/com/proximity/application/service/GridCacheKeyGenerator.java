@@ -13,9 +13,13 @@ public final class GridCacheKeyGenerator {
     }
 
     public static String searchKey(double lat, double lng, double radiusKm) {
+        return searchKey(lat, lng, radiusKm, 0, 20);
+    }
+
+    public static String searchKey(double lat, double lng, double radiusKm, int page, int size) {
         double roundedLat = roundToGrid(lat);
         double roundedLng = roundToGrid(lng);
-        return SEARCH_PREFIX + roundedLat + ":" + roundedLng + ":" + radiusKm;
+        return SEARCH_PREFIX + roundedLat + ":" + roundedLng + ":" + radiusKm + ":" + page + ":" + size;
     }
 
     public static String businessKey(Long id) {

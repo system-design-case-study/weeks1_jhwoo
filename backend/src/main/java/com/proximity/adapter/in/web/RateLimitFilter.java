@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class RateLimitFilter extends OncePerRequestFilter {
 
-    private static final int MAX_REQUESTS_PER_MINUTE = 60;
+    private static final int MAX_REQUESTS_PER_MINUTE = 300;
     private static final long WINDOW_MS = 60_000L;
     private static final String RETRY_AFTER_HEADER = "Retry-After";
     private static final int RETRY_AFTER_SECONDS = 60;

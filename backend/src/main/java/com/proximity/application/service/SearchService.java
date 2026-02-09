@@ -47,7 +47,8 @@ public class SearchService implements SearchUseCase {
         searchRadiusHistogram.record(request.radius());
 
         String cacheKey = GridCacheKeyGenerator.searchKey(
-                request.latitude(), request.longitude(), request.radius());
+                request.latitude(), request.longitude(), request.radius(),
+                request.page(), request.size());
 
         Optional<SearchResponse> cached = cachePort.getSearchCache(cacheKey);
         if (cached.isPresent()) {

@@ -40,6 +40,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/error").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/api/search/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/businesses/**").permitAll()

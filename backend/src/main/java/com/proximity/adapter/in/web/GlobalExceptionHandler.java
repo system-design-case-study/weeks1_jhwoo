@@ -7,6 +7,7 @@ import com.proximity.application.exception.DuplicateBusinessException;
 import com.proximity.application.exception.DuplicateEmailException;
 import com.proximity.application.exception.InvalidCredentialsException;
 import com.proximity.application.exception.InvalidRadiusException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -52,6 +53,12 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse("INVALID_CREDENTIALS", ex.getMessage()));
     }
 
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse("DATA_INTEGRITY_VIOLATION", "데이터 무결성 제약 조건 위반입니다."));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
         String message = ex.getBindingResult().getFieldErrors().stream()
@@ -60,5 +67,11 @@ public class GlobalExceptionHandler {
                 .orElse("유효하지 않은 요청입니다");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse("INVALID_PARAMETER", message));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleUnexpected(Exception ex) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse("INTERNAL_ERROR", "서버 내부 오류가 발생했습니다."));
     }
 }

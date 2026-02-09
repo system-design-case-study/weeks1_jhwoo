@@ -136,7 +136,8 @@ CREATE TABLE businesses (
     phone VARCHAR(20),
     category VARCHAR(100),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (owner_id, name, latitude, longitude)
 );
 
 CREATE INDEX idx_business_location ON businesses USING GIST(location);
@@ -170,7 +171,7 @@ CREATE INDEX idx_business_order ON business_photos(business_id, display_order);
 - **location**: latitude, longitude 변경 시 Trigger에 의해 자동 계산 (`GEOGRAPHY(Point, 4326)`)
 - **day_of_week**: 0(월요일) ~ 6(일요일)
 - **email**: RFC 5322 형식 검증
-- **password**: 최소 8자, BCrypt 해시 저장
+- **password**: 최소 4자, BCrypt 해시 저장
 
 ## Read Path Optimization
 

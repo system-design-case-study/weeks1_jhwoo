@@ -420,15 +420,6 @@ curl -s "http://localhost:8080/api/search?latitude=999&longitude=127.0&radius=1"
 
 # 유효하지 않은 반경 (400 Bad Request)
 curl -s "http://localhost:8080/api/search?latitude=37.5&longitude=127.0&radius=3" | python3 -m json.tool
-
-# Viewport Bounding Box 검색 (강남역 주변 viewport)
-curl -s "http://localhost:8080/api/search/bounds?swLat=37.490&swLng=127.020&neLat=37.510&neLng=127.040" | python3 -m json.tool
-
-# size 지정
-curl -s "http://localhost:8080/api/search/bounds?swLat=37.490&swLng=127.020&neLat=37.510&neLng=127.040&size=50" | python3 -m json.tool
-
-# 좌표 누락 시 400 Bad Request
-curl -s "http://localhost:8080/api/search/bounds?swLat=37.490" | python3 -m json.tool
 ```
 
 ---

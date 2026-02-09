@@ -1,0 +1,10 @@
+spring:
+  datasource:
+    primary:
+      jdbc-url: jdbc:postgresql://postgres-primary:5432/proximity
+    replica:
+      jdbc-url: jdbc:postgresql://postgres-replica-1:5432/proximity
+
+  data:
+    redis:
+      host: redis

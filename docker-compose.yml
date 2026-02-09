@@ -1,6 +1,7 @@
 services:
   postgres-primary:
     image: postgis/postgis:16-3.4
+    platform: linux/amd64
     container_name: proximity-postgres-primary
     environment:
       POSTGRES_DB: proximity
@@ -24,6 +25,7 @@ services:
 
   postgres-replica-1:
     image: postgis/postgis:16-3.4
+    platform: linux/amd64
     container_name: proximity-postgres-replica-1
     environment:
       PGUSER: replicator
@@ -55,6 +57,7 @@ services:
 
   postgres-replica-2:
     image: postgis/postgis:16-3.4
+    platform: linux/amd64
     container_name: proximity-postgres-replica-2
     environment:
       PGUSER: replicator
@@ -108,13 +111,6 @@ services:
       - "8080:8080"
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      SPRING_DATASOURCE_PRIMARY_URL: jdbc:postgresql://postgres-primary:5432/proximity
-      SPRING_DATASOURCE_PRIMARY_USERNAME: proximity
-      SPRING_DATASOURCE_PRIMARY_PASSWORD: proximity_password
-      SPRING_DATASOURCE_REPLICA_URL: jdbc:postgresql://postgres-replica-1:5432/proximity
-      SPRING_DATASOURCE_REPLICA_USERNAME: proximity
-      SPRING_DATASOURCE_REPLICA_PASSWORD: proximity_password
-      SPRING_DATA_REDIS_HOST: redis
     depends_on:
       postgres-primary:
         condition: service_healthy

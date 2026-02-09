@@ -47,4 +47,31 @@ public final class PostgisFunction {
                 point
         );
     }
+
+    /**
+     * ST_MakeEnvelope(xmin, ymin, xmax, ymax, SRID) Bounding Box geometry 생성.
+     */
+    public static Field<Object> stMakeEnvelope(double swLng, double swLat,
+                                                double neLng, double neLat, int srid) {
+        return DSL.field(
+                "ST_MakeEnvelope({0}, {1}, {2}, {3}, {4})",
+                Object.class,
+                DSL.val(swLng),
+                DSL.val(swLat),
+                DSL.val(neLng),
+                DSL.val(neLat),
+                DSL.val(srid)
+        );
+    }
+
+    /**
+     * Bounding Box 교집합 조건 (GiST 인덱스 활용).
+     */
+    public static Condition bboxIntersects(Field<?> location, Field<?> envelope) {
+        return DSL.condition(
+                "{0} && {1}::geography",
+                location,
+                envelope
+        );
+    }
 }

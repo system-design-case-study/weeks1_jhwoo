@@ -121,6 +121,28 @@ services:
     networks:
       - proximity-net
 
+  csv-loader:
+    build:
+      context: ./scripts
+      dockerfile: Dockerfile
+    container_name: proximity-csv-loader
+    volumes:
+      - ./식품_일반음식점.csv:/data/data.csv:ro
+    command:
+      - "--file"
+      - "/data/data.csv"
+      - "--db-host"
+      - "postgres-primary"
+      - "--wait"
+      - "120"
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+    profiles:
+      - seed
+    networks:
+      - proximity-net
+
   nginx:
     image: nginx:alpine
     container_name: proximity-nginx

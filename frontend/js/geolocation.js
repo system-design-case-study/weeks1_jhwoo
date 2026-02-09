@@ -6,6 +6,7 @@ const Geolocation = (() => {
   let currentLat = FALLBACK_LAT;
   let currentLng = FALLBACK_LNG;
   let isFallback = true;
+  let isManualPosition = false;
 
   function init() {
     if (!window.isSecureContext) {
@@ -29,9 +30,10 @@ const Geolocation = (() => {
     currentLat = position.coords.latitude;
     currentLng = position.coords.longitude;
     isFallback = false;
+    isManualPosition = false;
 
     MapModule.setView(currentLat, currentLng);
-    MapModule.setUserMarker(currentLat, currentLng, false);
+    MapModule.setUserMarker(currentLat, currentLng, false, false);
   }
 
   function onError(error) {
@@ -53,15 +55,41 @@ const Geolocation = (() => {
     currentLat = FALLBACK_LAT;
     currentLng = FALLBACK_LNG;
     isFallback = true;
+    isManualPosition = false;
 
     MapModule.setView(FALLBACK_LAT, FALLBACK_LNG);
-    MapModule.setUserMarker(FALLBACK_LAT, FALLBACK_LNG, true);
+    MapModule.setUserMarker(FALLBACK_LAT, FALLBACK_LNG, true, false);
     App.showToast(message, 5000);
+  }
+
+  function requestPosition() {
+    if (!window.isSecureContext || !navigator.geolocation) {
+      App.showToast('위치 정보를 사용할 수 없습니다.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        onSuccess(position);
+        Search.doSearch();
+      },
+      onError,
+      { enableHighAccuracy: true, timeout: TIMEOUT_MS, maximumAge: 0 }
+    );
+  }
+
+  function setPosition(lat, lng) {
+    currentLat = lat;
+    currentLng = lng;
+    isFallback = false;
+    isManualPosition = true;
+
+    MapModule.setUserMarker(lat, lng, false, true);
   }
 
   function getPosition() {
     return { lat: currentLat, lng: currentLng, isFallback };
   }
 
-  return { init, getPosition };
+  return { init, getPosition, requestPosition, setPosition };
 })();

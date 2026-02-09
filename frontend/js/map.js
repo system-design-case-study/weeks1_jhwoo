@@ -8,18 +8,31 @@ const MapModule = (() => {
   let geohashLayer = null;
   let userMarker = null;
   let tempMarker = null;
+  let onMapDoubleClick = null;
 
   function init(elementId) {
-    map = L.map(elementId).setView(SEOUL_CENTER, DEFAULT_ZOOM);
+    map = L.map(elementId, { doubleClickZoom: false }).setView(SEOUL_CENTER, DEFAULT_ZOOM);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 19,
     }).addTo(map);
 
-    markersLayer = L.layerGroup().addTo(map);
+    markersLayer = L.markerClusterGroup({
+      maxClusterRadius: 40,
+      spiderfyOnMaxZoom: true,
+      showCoverageOnHover: false,
+      zoomToBoundsOnClick: true,
+    });
+    map.addLayer(markersLayer);
+
     circleLayer = L.layerGroup().addTo(map);
     geohashLayer = L.layerGroup().addTo(map);
+
+    map.on('dblclick', (e) => {
+      L.DomEvent.preventDefault(e);
+      if (onMapDoubleClick) onMapDoubleClick(e.latlng);
+    });
 
     return map;
   }
@@ -34,12 +47,12 @@ const MapModule = (() => {
     }
   }
 
-  function setUserMarker(lat, lng, isFallback) {
+  function setUserMarker(lat, lng, isFallback, isManual) {
     if (userMarker) {
       map.removeLayer(userMarker);
     }
 
-    const color = isFallback ? '#888' : '#3388ff';
+    const color = isFallback ? '#888' : (isManual ? '#f39c12' : '#3388ff');
     const icon = L.divIcon({
       className: 'user-marker',
       html: `<div style="
@@ -51,9 +64,12 @@ const MapModule = (() => {
       iconAnchor: [8, 8],
     });
 
+    const popupText = isFallback ? '기본 위치 (서울 시청)' :
+                      (isManual ? '선택한 위치' : '현재 위치');
+
     userMarker = L.marker([lat, lng], { icon, zIndexOffset: 1000 })
       .addTo(map)
-      .bindPopup(isFallback ? '기본 위치 (서울 시청)' : '현재 위치');
+      .bindPopup(popupText);
   }
 
   function clearMarkers() {
@@ -159,6 +175,10 @@ const MapModule = (() => {
     return map ? map.getBounds() : null;
   }
 
+  function setMapDoubleClickHandler(handler) {
+    onMapDoubleClick = handler;
+  }
+
   return {
     SEOUL_CENTER,
     DEFAULT_ZOOM,
@@ -179,5 +199,6 @@ const MapModule = (() => {
     clearTempMarker,
     getZoom,
     getBounds,
+    setMapDoubleClickHandler,
   };
 })();

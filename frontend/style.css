@@ -116,22 +116,44 @@ body {
 
 #search-controls {
   display: flex;
+  flex-direction: column;
   gap: 8px;
-  align-items: end;
   margin-bottom: 12px;
 }
 
-#search-controls label {
-  font-size: 13px;
-  color: #666;
+#search-controls-row1 {
+  display: flex;
 }
 
-#radius-select {
+#keyword-input {
   flex: 1;
   padding: 8px;
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 14px;
+}
+
+#search-controls-row2 {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+#search-controls-row2 select {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 13px;
+  min-width: 0;
+}
+
+#category-filter {
+  max-width: 120px;
+}
+
+#sort-select {
+  max-width: 80px;
 }
 
 #btn-search {
@@ -485,6 +507,7 @@ body {
   font-size: 14px;
 }
 
+
 .admin-detail-actions {
   display: flex;
   gap: 8px;
@@ -516,6 +539,104 @@ body {
   font-size: 10px;
   color: #9b59b6;
   font-weight: bold;
+}
+
+#favorites-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.fav-tab {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ddd;
+  background: #f8f8f8;
+  cursor: pointer;
+  font-size: 13px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.fav-tab.active {
+  background: #3388ff;
+  color: #fff;
+  border-color: #3388ff;
+}
+
+.favorites-list {
+  list-style: none;
+}
+
+.favorites-list li {
+  padding: 12px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.favorites-list li:hover {
+  background: #f8f8ff;
+}
+
+.fav-remove-btn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: #ccc;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+}
+
+.fav-remove-btn:hover {
+  color: #e74c3c;
+}
+
+.detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.fav-btn {
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #999;
+  white-space: nowrap;
+}
+
+.fav-btn.active {
+  color: #f39c12;
+  border-color: #f39c12;
+}
+
+.fav-icon {
+  color: #f39c12;
+  margin-right: 4px;
+}
+
+.favorites-empty {
+  text-align: center;
+  padding: 32px 16px;
+  color: #999;
+  font-size: 14px;
+}
+
+.favorites-section-title {
+  font-size: 13px;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #eee;
 }
 
 @media (max-width: 768px) {

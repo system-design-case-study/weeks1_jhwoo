@@ -25,6 +25,7 @@ const Detail = (() => {
       return;
     }
 
+    Favorites.addRecent(result.data);
     render(result.data, container);
   }
 
@@ -33,9 +34,16 @@ const Detail = (() => {
     const hoursHtml = buildHoursHtml(biz.businessHours);
     const isOwner = Api.isLoggedIn() && Api.getOwner()?.id === biz.ownerId;
 
+    const isFav = Favorites.isFavorite(biz.id);
+    const favBtnText = isFav ? '★ 저장됨' : '☆ 즐겨찾기';
+    const favBtnClass = isFav ? 'fav-btn active' : 'fav-btn';
+
     container.innerHTML = `
       ${photoHtml}
-      <div class="detail-name">${Search.escapeHtml(biz.name)}</div>
+      <div class="detail-header">
+        <div class="detail-name">${Search.escapeHtml(biz.name)}</div>
+        <button class="${favBtnClass}" data-id="${biz.id}">${favBtnText}</button>
+      </div>
       <div class="detail-address">${Search.escapeHtml(biz.address)}</div>
 
       ${biz.phone ? `
@@ -61,6 +69,13 @@ const Detail = (() => {
         </div>
       ` : ''}
     `;
+
+    container.querySelector('.fav-btn').addEventListener('click', () => {
+      const nowFav = Favorites.toggleFavorite(biz);
+      const btn = container.querySelector('.fav-btn');
+      btn.textContent = nowFav ? '★ 저장됨' : '☆ 즐겨찾기';
+      btn.classList.toggle('active', nowFav);
+    });
 
     if (isOwner) {
       container.querySelector('.btn-edit').addEventListener('click', () => {

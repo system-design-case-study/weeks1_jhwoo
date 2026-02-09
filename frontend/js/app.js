@@ -6,18 +6,27 @@ const App = (() => {
     Geolocation.init();
     Search.init();
     Detail.init();
+    Favorites.init();
     Admin.init();
     GeohashViz.init();
     initModeToggle();
     updateAuthUI();
+
+    document.getElementById('btn-my-location').addEventListener('click', () => {
+      Geolocation.requestPosition();
+    });
+
+    MapModule.setMapDoubleClickHandler((latlng) => {
+      Geolocation.setPosition(latlng.lat, latlng.lng);
+      Search.doSearch();
+      App.showToast('선택한 위치 기준으로 검색합니다.');
+    });
   }
 
   function initModeToggle() {
-    const btnSearch = document.getElementById('btn-search-mode');
-    const btnAdmin = document.getElementById('btn-admin-mode');
-
-    btnSearch.addEventListener('click', () => switchView('search'));
-    btnAdmin.addEventListener('click', () => switchView('admin'));
+    document.getElementById('btn-search-mode').addEventListener('click', () => switchView('search'));
+    document.getElementById('btn-favorites-mode').addEventListener('click', () => switchView('favorites'));
+    document.getElementById('btn-admin-mode').addEventListener('click', () => switchView('admin'));
   }
 
   function switchView(view) {
@@ -29,6 +38,11 @@ const App = (() => {
     if (view === 'search') {
       document.getElementById('btn-search-mode').classList.add('active');
       document.getElementById('search-view').classList.add('active');
+      Admin.setMapClickMode(false);
+    } else if (view === 'favorites') {
+      document.getElementById('btn-favorites-mode').classList.add('active');
+      document.getElementById('favorites-view').classList.add('active');
+      Favorites.renderFavoritesView();
       Admin.setMapClickMode(false);
     } else if (view === 'admin') {
       document.getElementById('btn-admin-mode').classList.add('active');
@@ -49,6 +63,8 @@ const App = (() => {
 
     if (currentView === 'admin') {
       document.getElementById('admin-view').classList.add('active');
+    } else if (currentView === 'favorites') {
+      document.getElementById('favorites-view').classList.add('active');
     } else {
       document.getElementById('search-view').classList.add('active');
     }

@@ -8,11 +8,11 @@ import com.proximity.application.port.out.CachePort;
 import com.proximity.application.port.out.SearchPort;
 import com.proximity.config.MetricsConfig.CacheHitRatioHolder;
 import io.micrometer.core.instrument.DistributionSummary;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -50,8 +50,13 @@ class SearchServiceTest {
     @Mock
     private CacheHitRatioHolder cacheHitRatioHolder;
 
-    @InjectMocks
     private SearchService searchService;
+
+    @BeforeEach
+    void setUp() {
+        searchService = new SearchService(
+                searchPort, cachePort, searchResultCountSummary, searchRadiusHistogram, cacheHitRatioHolder);
+    }
 
     private static final double LATITUDE = 37.5665;
     private static final double LONGITUDE = 126.9780;
@@ -171,6 +176,79 @@ class SearchServiceTest {
             // then
             assertThat(response.businesses()).hasSize(1);
             verify(cachePort).putSearchCache(anyString(), any(SearchResponse.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("메트릭 기록")
+    class MetricsRecording {
+
+        @Test
+        @DisplayName("검색 시 radius가 histogram에 기록된다")
+        void search_recordsRadiusHistogram() {
+            // given
+            SearchRequest request = new SearchRequest(LATITUDE, LONGITUDE, 1.0, 0, 20);
+            when(cachePort.getSearchCache(anyString())).thenReturn(Optional.empty());
+            when(searchPort.searchByLocation(anyDouble(), anyDouble(), anyDouble(), anyInt(), anyInt()))
+                    .thenReturn(Collections.emptyList());
+            when(searchPort.countByLocation(anyDouble(), anyDouble(), anyDouble())).thenReturn(0L);
+
+            // when
+            searchService.search(request);
+
+            // then
+            verify(searchRadiusHistogram).record(1.0);
+        }
+
+        @Test
+        @DisplayName("Cache Hit 시 cacheHitRatioHolder.recordHit()이 호출된다")
+        void search_cacheHit_recordsHit() {
+            // given
+            SearchRequest request = new SearchRequest(LATITUDE, LONGITUDE, 1.0, 0, 20);
+            SearchResponse cachedResponse = new SearchResponse(Collections.emptyList(), 0L, 0, 20);
+            when(cachePort.getSearchCache(anyString())).thenReturn(Optional.of(cachedResponse));
+
+            // when
+            searchService.search(request);
+
+            // then
+            verify(cacheHitRatioHolder).recordHit();
+            verify(cacheHitRatioHolder, never()).recordMiss();
+        }
+
+        @Test
+        @DisplayName("Cache Miss 시 cacheHitRatioHolder.recordMiss()가 호출된다")
+        void search_cacheMiss_recordsMiss() {
+            // given
+            SearchRequest request = new SearchRequest(LATITUDE, LONGITUDE, 1.0, 0, 20);
+            when(cachePort.getSearchCache(anyString())).thenReturn(Optional.empty());
+            when(searchPort.searchByLocation(anyDouble(), anyDouble(), anyDouble(), anyInt(), anyInt()))
+                    .thenReturn(Collections.emptyList());
+            when(searchPort.countByLocation(anyDouble(), anyDouble(), anyDouble())).thenReturn(0L);
+
+            // when
+            searchService.search(request);
+
+            // then
+            verify(cacheHitRatioHolder).recordMiss();
+            verify(cacheHitRatioHolder, never()).recordHit();
+        }
+
+        @Test
+        @DisplayName("Cache Miss 시 결과 건수가 searchResultCountSummary에 기록된다")
+        void search_cacheMiss_recordsResultCount() {
+            // given
+            SearchRequest request = new SearchRequest(LATITUDE, LONGITUDE, 1.0, 0, 20);
+            when(cachePort.getSearchCache(anyString())).thenReturn(Optional.empty());
+            when(searchPort.searchByLocation(anyDouble(), anyDouble(), anyDouble(), anyInt(), anyInt()))
+                    .thenReturn(Collections.emptyList());
+            when(searchPort.countByLocation(anyDouble(), anyDouble(), anyDouble())).thenReturn(5L);
+
+            // when
+            searchService.search(request);
+
+            // then
+            verify(searchResultCountSummary).record(5L);
         }
     }
 }

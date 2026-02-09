@@ -1,9 +1,11 @@
 package com.proximity.config;
 
+import com.proximity.adapter.in.web.BusinessController;
 import com.proximity.adapter.in.web.GlobalExceptionHandler;
 import com.proximity.adapter.in.web.JwtAuthenticationFilter;
 import com.proximity.adapter.in.web.SearchController;
 import com.proximity.adapter.out.auth.JwtAuthAdapter;
+import com.proximity.application.port.in.BusinessUseCase;
 import com.proximity.application.port.in.SearchUseCase;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,11 +16,13 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest({SearchController.class, GlobalExceptionHandler.class})
+@WebMvcTest({SearchController.class, BusinessController.class, GlobalExceptionHandler.class})
 @Import({SecurityConfig.class, JwtAuthenticationFilter.class, JwtAuthAdapter.class})
 class SecurityConfigTest {
 
@@ -30,6 +34,9 @@ class SecurityConfigTest {
 
     @MockitoBean
     private SearchUseCase searchUseCase;
+
+    @MockitoBean
+    private BusinessUseCase businessUseCase;
 
     @Test
     @DisplayName("GET /api/search → 토큰 없이 200 OK")
@@ -87,6 +94,33 @@ class SecurityConfigTest {
         int responseStatus = mockMvc.perform(post("/api/owners/login")
                         .contentType("application/json")
                         .content("{\"email\":\"test@test.com\",\"password\":\"pass\"}"))
+                .andReturn().getResponse().getStatus();
+
+        // then
+        assertThat(responseStatus).isNotEqualTo(401);
+    }
+
+    @Test
+    @DisplayName("PUT /api/businesses/{id}/update → 토큰 없이 401 Unauthorized")
+    void updateWithoutToken() throws Exception {
+        mockMvc.perform(put("/api/businesses/{id}/update", 1L)
+                        .contentType("application/json")
+                        .content("{\"name\":\"수정\",\"address\":\"주소\"}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("DELETE /api/businesses/{id}/delete → 토큰 없이 401 Unauthorized")
+    void deleteWithoutToken() throws Exception {
+        mockMvc.perform(delete("/api/businesses/{id}/delete", 1L))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("GET /api/businesses/{id} → 토큰 없이 접근 가능 (401 아님)")
+    void getBusinessDetailWithoutToken() throws Exception {
+        // when
+        int responseStatus = mockMvc.perform(get("/api/businesses/{id}", 1L))
                 .andReturn().getResponse().getStatus();
 
         // then

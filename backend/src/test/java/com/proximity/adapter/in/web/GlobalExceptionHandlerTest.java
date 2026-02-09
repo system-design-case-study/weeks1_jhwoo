@@ -8,6 +8,8 @@ import com.proximity.application.exception.InvalidCredentialsException;
 import com.proximity.application.exception.InvalidRadiusException;
 import com.proximity.application.port.in.BusinessUseCase;
 import com.proximity.application.port.in.OwnerAuthUseCase;
+import com.proximity.application.port.in.SearchUseCase;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +35,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest({BusinessController.class, OwnerController.class, GlobalExceptionHandler.class})
+@WebMvcTest({BusinessController.class, OwnerController.class, SearchController.class, GlobalExceptionHandler.class})
 @Import(GlobalExceptionHandlerTest.TestSecurityConfig.class)
 @DisplayName("GlobalExceptionHandler 단위 테스트 (T-7.1)")
 class GlobalExceptionHandlerTest {
@@ -56,6 +58,9 @@ class GlobalExceptionHandlerTest {
 
     @MockitoBean
     private OwnerAuthUseCase ownerAuthUseCase;
+
+    @MockitoBean
+    private SearchUseCase searchUseCase;
 
     private static final Long OWNER_ID = 1L;
     private static final Long BUSINESS_ID = 100L;
@@ -166,5 +171,52 @@ class GlobalExceptionHandlerTest {
                         .content("{\"name\":\"카페\",\"address\":\"주소\",\"latitude\":999.0,\"longitude\":126.9}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_PARAMETER"));
+    }
+
+    @Test
+    @DisplayName("InvalidRadiusException → 400 + {code: INVALID_RADIUS}")
+    void invalidRadius() throws Exception {
+        // given
+        given(searchUseCase.search(any()))
+                .willThrow(new InvalidRadiusException(3.0));
+
+        // when & then
+        mockMvc.perform(get("/api/search")
+                        .param("latitude", "37.5665")
+                        .param("longitude", "126.978")
+                        .param("radius", "3.0"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_RADIUS"));
+    }
+
+    @Test
+    @DisplayName("DataIntegrityViolationException → 409 + {code: DATA_INTEGRITY_VIOLATION}")
+    void dataIntegrityViolation() throws Exception {
+        // given
+        given(businessUseCase.create(any(), eq(OWNER_ID)))
+                .willThrow(new DataIntegrityViolationException("constraint violation"));
+
+        // when & then
+        mockMvc.perform(post("/api/businesses")
+                        .with(authentication(ownerAuth()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"카페\",\"address\":\"주소\",\"latitude\":37.5,\"longitude\":126.9}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("DATA_INTEGRITY_VIOLATION"))
+                .andExpect(jsonPath("$.message").value("데이터 무결성 제약 조건 위반입니다."));
+    }
+
+    @Test
+    @DisplayName("예상치 못한 Exception → 500 + {code: INTERNAL_ERROR}")
+    void unexpectedException() throws Exception {
+        // given
+        given(businessUseCase.getDetail(BUSINESS_ID))
+                .willThrow(new RuntimeException("예상치 못한 오류"));
+
+        // when & then
+        mockMvc.perform(get("/api/businesses/{id}", BUSINESS_ID))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.code").value("INTERNAL_ERROR"))
+                .andExpect(jsonPath("$.message").value("서버 내부 오류가 발생했습니다."));
     }
 }

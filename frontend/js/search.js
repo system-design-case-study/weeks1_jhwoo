@@ -40,6 +40,8 @@ const Search = (() => {
 
     businesses.forEach(biz => {
       const marker = MapModule.addMarker(biz.latitude || pos.lat, biz.longitude || pos.lng, biz);
+      const popupContent = `<strong>${escapeHtml(biz.name)}</strong><br>${escapeHtml(biz.address)}<br><small>${App.formatDistance(biz.distance)}</small>`;
+      marker.bindPopup(popupContent);
       marker.on('click', () => onMarkerClick(biz));
     });
 
@@ -77,6 +79,7 @@ const Search = (() => {
   }
 
   function onMarkerClick(biz) {
+    highlightListItem(biz.id);
     Detail.show(biz.id);
   }
 

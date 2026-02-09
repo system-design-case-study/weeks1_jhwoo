@@ -1,13 +1,10 @@
 package com.proximity.infrastructure;
 
+import com.proximity.testconfig.TestcontainersConfig;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -17,30 +14,21 @@ import java.sql.Statement;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Testcontainers
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GistIndexScanTest {
-
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(
-            DockerImageName.parse("postgis/postgis:16-3.4").asCompatibleSubstituteFor("postgres")
-    )
-            .withDatabaseName("proximity_test")
-            .withUsername("test")
-            .withPassword("test");
 
     private Connection connection;
 
     @BeforeAll
     void setUp() throws Exception {
         connection = DriverManager.getConnection(
-                postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+                TestcontainersConfig.POSTGRES.getJdbcUrl(),
+                TestcontainersConfig.POSTGRES.getUsername(),
+                TestcontainersConfig.POSTGRES.getPassword());
 
         try (Statement stmt = connection.createStatement()) {
-            stmt.execute("CREATE EXTENSION IF NOT EXISTS postgis");
-
             stmt.execute("""
-                CREATE TABLE owners (
+                CREATE TABLE IF NOT EXISTS gist_test_owners (
                     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
                     email VARCHAR(255) NOT NULL UNIQUE,
                     password_hash VARCHAR(255) NOT NULL,
@@ -51,9 +39,9 @@ class GistIndexScanTest {
                 """);
 
             stmt.execute("""
-                CREATE TABLE businesses (
+                CREATE TABLE IF NOT EXISTS gist_test_businesses (
                     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                    owner_id BIGINT NOT NULL REFERENCES owners(id),
+                    owner_id BIGINT NOT NULL REFERENCES gist_test_owners(id),
                     name VARCHAR(255) NOT NULL,
                     address VARCHAR(500) NOT NULL,
                     latitude DECIMAL(9,6) NOT NULL,
@@ -66,14 +54,24 @@ class GistIndexScanTest {
                 )
                 """);
 
-            stmt.execute("CREATE INDEX idx_business_location ON businesses USING GIST(location)");
+            stmt.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_gist_test_biz_location " +
+                    "ON gist_test_businesses USING GIST(location)");
+
+            ResultSet countRs = stmt.executeQuery("SELECT COUNT(*) FROM gist_test_businesses");
+            countRs.next();
+            if (countRs.getLong(1) > 0) {
+                return;
+            }
 
             stmt.execute("""
-                INSERT INTO owners (email, password_hash, name)
+                INSERT INTO gist_test_owners (email, password_hash, name)
                 VALUES ('gist-test@test.com', '$2a$10$dummy', 'GIST 테스트')
+                ON CONFLICT (email) DO NOTHING
                 """);
 
-            ResultSet rs = stmt.executeQuery("SELECT id FROM owners WHERE email = 'gist-test@test.com'");
+            ResultSet rs = stmt.executeQuery(
+                    "SELECT id FROM gist_test_owners WHERE email = 'gist-test@test.com'");
             rs.next();
             long ownerId = rs.getLong(1);
 
@@ -92,11 +90,12 @@ class GistIndexScanTest {
                             i, i, lat, lng, ownerId, lng, lat));
                 }
                 stmt.execute(
-                        "INSERT INTO businesses (name, address, latitude, longitude, phone, category, owner_id, location, created_at, updated_at) VALUES " +
-                        values);
+                        "INSERT INTO gist_test_businesses " +
+                        "(name, address, latitude, longitude, phone, category, owner_id, location, created_at, updated_at) " +
+                        "VALUES " + values);
             }
 
-            stmt.execute("ANALYZE businesses");
+            stmt.execute("ANALYZE gist_test_businesses");
         }
     }
 
@@ -111,7 +110,7 @@ class GistIndexScanTest {
         // when
         StringBuilder planOutput = new StringBuilder();
         try (PreparedStatement ps = connection.prepareStatement(
-                "EXPLAIN ANALYZE SELECT id, name FROM businesses " +
+                "EXPLAIN ANALYZE SELECT id, name FROM gist_test_businesses " +
                 "WHERE ST_DWithin(location, ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography, ?)")) {
             ps.setDouble(1, lng);
             ps.setDouble(2, lat);
@@ -134,7 +133,8 @@ class GistIndexScanTest {
         // when
         long indexSize;
         try (Statement stmt = connection.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT pg_relation_size('idx_business_location')")) {
+             ResultSet rs = stmt.executeQuery(
+                     "SELECT pg_relation_size('idx_gist_test_biz_location')")) {
             rs.next();
             indexSize = rs.getLong(1);
         }
@@ -154,7 +154,7 @@ class GistIndexScanTest {
         // when
         long count;
         try (PreparedStatement ps = connection.prepareStatement(
-                "SELECT COUNT(*) FROM businesses " +
+                "SELECT COUNT(*) FROM gist_test_businesses " +
                 "WHERE ST_DWithin(location, ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography, ?)")) {
             ps.setDouble(1, lng);
             ps.setDouble(2, lat);
@@ -181,7 +181,7 @@ class GistIndexScanTest {
         // when
         StringBuilder planOutput = new StringBuilder();
         try (PreparedStatement ps = connection.prepareStatement(
-                "EXPLAIN ANALYZE SELECT id, name FROM businesses " +
+                "EXPLAIN ANALYZE SELECT id, name FROM gist_test_businesses " +
                 "WHERE ST_DWithin(location, ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography, ?)")) {
             ps.setDouble(1, lng);
             ps.setDouble(2, lat);

@@ -514,6 +514,6 @@ Nginx Rate Limiting(60req/min)이 적용되어 있다. 부하 테스트 시에�
 # Nginx 경유 (Rate Limiting 적용)
 k6 run -e BASE_URL=http://localhost k6/search-load-test.js
 
-# Backend 직접 (Rate Limiting 미적용 — Nginx 우회)
+# Backend 직접 (Nginx 60req/min 우회, Backend 300req/min 적용)
 k6 run -e BASE_URL=http://localhost:8080 k6/search-load-test.js
 ```

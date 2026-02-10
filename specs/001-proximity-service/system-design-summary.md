@@ -381,9 +381,9 @@ SELECT DISTINCT category FROM businesses WHERE category IS NOT NULL ORDER BY cat
 - Backend의 `page`, `size` 파라미터를 활용하여 추가 구현 없이 페이지네이션 지원
 
 **설계 원칙**:
-- **지도 마커**: 첫 페이지(200건)만 표시하여 렌더링 성능 유지
+- **지도 마커**: 페이지 추가 로드 시 마커도 누적 추가 (MarkerClusterGroup이 밀집 처리)
 - **리스트**: 스크롤 시 다음 페이지를 자동 로드하여 전체 결과 탐색 가능
-- **키워드 필터**: 누적된 전체 결과(`allResults`) 대상으로 클라이언트 필터링
+- **키워드 필터**: 누적된 전체 결과(`allResults`) 대상으로 클라이언트 필터링, 필터된 결과만 마커 추가
 
 **Frontend 구현** (`search.js`):
 ```javascript
@@ -392,18 +392,28 @@ let currentPage = 0, totalCount = 0, isLoading = false;
 
 function setupScrollObserver() {
     scrollObserver = new IntersectionObserver(entries => {
-        if (entries[0].isIntersecting && !isLoading && hasMore()) loadMore();
+        if (entries[0].isIntersecting) loadMore();
     });
     scrollObserver.observe(document.getElementById('scroll-sentinel'));
 }
 
 async function loadMore() {
+    if (isLoading || !hasMore()) return;
     isLoading = true;
     currentPage++;
-    const result = await Api.search(lat, lng, radius, category, currentPage, PAGE_SIZE);
-    allResults = allResults.concat(result.data.businesses);
-    appendResultList(result.data.businesses);
-    updateSentinelVisibility();
+    const result = await Api.search(pos.lat, pos.lng, radiusKm, currentCategory, currentPage, PAGE_SIZE);
+    const businesses = result.data.businesses || [];
+    allResults = allResults.concat(businesses);
+
+    // 키워드 필터 활성화 시 필터된 결과만 마커+리스트에 추가
+    if (keyword) {
+        const filtered = businesses.filter(biz => biz.name.toLowerCase().includes(keyword));
+        addMarkers(filtered, pos);
+        appendResultList(filtered);
+    } else {
+        addMarkers(businesses, pos);
+        appendResultList(businesses);
+    }
     isLoading = false;
 }
 ```
@@ -737,23 +747,63 @@ docker compose --profile seed up csv-loader
 - 카테고리 클릭 → `GET /api/search?category=카페&size=200` (서버사이드 필터링)
 - "뒤로" 버튼으로 카테고리 선택 화면 복귀
 - 카테고리별 이모지 매핑 (알려진 카테고리만, 나머지 기본 📍 아이콘)
-- 카테고리별 마커 색상 (카페: 갈색, 식당: 빨강, 약국: 파랑 등)
+- 카테고리별 마커 색상: 문자열 해시 기반 15색 팔레트에서 동적 생성 (하드코딩 제거)
+
+**카테고리별 마커 색상** (`map.js`):
+
+초기에는 카테고리별 색상을 하드코딩했으나, 새 카테고리 추가 시 코드 수정이 필요한 문제를 해결하기 위해 **문자열 해시 기반 동적 색상 생성**으로 전환했다:
+
+```javascript
+const COLOR_PALETTE = [
+  '#E74C3C', '#3498DB', '#27AE60', '#F39C12', '#9B59B6',
+  '#1ABC9C', '#E67E22', '#E91E63', '#00BCD4', '#FF5722',
+  '#8BC34A', '#795548', '#607D8B', '#FF9800', '#673AB7',
+];
+
+function categoryColor(category) {
+  if (!category) return '#3388ff';
+  let hash = 0;
+  for (let i = 0; i < category.length; i++) {
+    hash = category.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return COLOR_PALETTE[Math.abs(hash) % COLOR_PALETTE.length];
+}
+```
+
+- 동일 카테고리는 항상 동일 색상 → 시각적 일관성 보장
+- 마커 크기 18px, 원형 `divIcon` (CSS 렌더링, 이미지 불필요)
+- 검색 결과 리스트에도 동일 색상의 `.cat-dot` 표시
 
 ### 10.2 무한 스크롤
 
 - IntersectionObserver로 스크롤 센티널(`#scroll-sentinel`) 감시
 - 센티널이 화면에 진입하면 다음 페이지 자동 로드 (`currentPage++`)
 - `isLoading` 가드로 중복 요청 방지
-- 마커는 첫 페이지(200건) 고정, 리스트는 전체 페이지 누적
+- 페이지 추가 로드 시 마커도 누적 추가 (MarkerClusterGroup이 밀집 자동 처리)
+- 키워드 필터 활성화 시 필터된 결과만 마커+리스트에 추가
 - 검색 정보 표시: "카페 5,458건 (400개 표시)"
 
-### 10.3 기타 기능
+### 10.3 즐겨찾기 + 최근 본 사업장
 
-- 즐겨찾기/최근 본 사업장 (localStorage 기반, 별도 백엔드 API 없이 클라이언트에서 처리)
-- 키워드 검색 (debounce 300ms, 누적된 전체 결과 대상 클라이언트 필터)
-- 거리순/이름순 정렬
-- 지도 더블클릭으로 검색 위치 수동 선택 (주황색 마커)
-- MarkerClusterGroup으로 마커 밀집 시 클러스터링
+별도 백엔드 API 없이 localStorage 기반으로 클라이언트에서 처리:
+
+| 구분 | localStorage 키 | 제한 | 동작 |
+|------|-----------------|------|------|
+| 즐겨찾기 | `proximity_favorites` | 무제한 | 상세 페이지에서 `★` 토글로 추가/제거 |
+| 최근 본 사업장 | `proximity_recent` | 최대 20건 | 상세 조회 시 자동 저장, 초과 시 오래된 순 삭제 |
+
+- 탭 UI로 즐겨찾기/최근본 전환
+- 저장 데이터: `{id, name, address, category, savedAt/viewedAt}`
+- 항목 클릭 시 상세 조회 화면으로 이동
+
+### 10.4 기타 편의 기능
+
+- **키워드 검색**: debounce 300ms, 누적된 전체 결과(`allResults`) 대상 클라이언트 필터 (서버 요청 없음)
+- **거리순/이름순 정렬**
+- **지도 더블클릭**: 검색 위치 수동 선택 → 주황색 마커(`#f39c12`) + "선택한 위치" 팝업
+- **MarkerClusterGroup**: `maxClusterRadius: 40`, 밀집 시 클러스터 원 표시, 클릭 시 줌인
+- **마커-리스트 연동**: 마커 클릭 → 리스트 항목 하이라이트(`.selected`), 리스트 클릭 → `flyTo()` + 팝업 오픈
+- **Geohash 시각화**: 토글 버튼으로 현재 Viewport의 Geohash 셀을 보라색 대시 박스로 표시 (줌 레벨별 precision 2~8 자동 조정, 최대 200셀)
 
 ---
 
@@ -791,6 +841,42 @@ docker compose --profile seed up csv-loader
 | 소유권 검증 | `Business.isOwnedBy()` — 비소유주 `403 Forbidden` |
 | API 보호 | Rate Limiting 이중화 (Nginx + Backend) |
 | CORS | `SecurityConfig`에서 설정 |
+| 세션 | Stateless (`SessionCreationPolicy.STATELESS`) |
+
+**엔드포인트별 인증 설정** (`SecurityConfig.java`):
+
+```
+permitAll (인증 불필요):
+  /api/search/**         — 검색
+  /api/categories/**     — 카테고리 목록
+  GET /api/businesses/** — 상세 조회
+  /api/owners/signup     — 회원가입
+  /api/owners/login      — 로그인
+  /actuator/**           — 모니터링
+
+authenticated (JWT 필수):
+  POST /api/businesses    — 등록
+  PUT /api/businesses/**  — 수정
+  DELETE /api/businesses/** — 삭제
+```
+
+**Filter Chain 순서**: `RateLimitFilter` → `JwtAuthenticationFilter` → `UsernamePasswordAuthenticationFilter`
+
+### 11.4 전역 예외 처리
+
+`GlobalExceptionHandler`(`@RestControllerAdvice`)에서 모든 예외를 `ErrorResponse(code, message)` 형식으로 통일:
+
+| 예외 | HTTP 상태 | Error Code |
+|------|-----------|------------|
+| `BusinessNotFoundException` | 404 | `BUSINESS_NOT_FOUND` |
+| `DuplicateBusinessException` | 409 | `DUPLICATE_BUSINESS` |
+| `BusinessOwnershipException` | 403 | `FORBIDDEN` |
+| `InvalidRadiusException` | 400 | `INVALID_RADIUS` |
+| `DuplicateEmailException` | 409 | `DUPLICATE_EMAIL` |
+| `InvalidCredentialsException` | 401 | `INVALID_CREDENTIALS` |
+| `DataIntegrityViolationException` | 409 | `DATA_INTEGRITY_VIOLATION` |
+| `MethodArgumentNotValidException` | 400 | `INVALID_PARAMETER` (필드별 메시지 조합) |
+| `Exception` (기타) | 500 | `INTERNAL_ERROR` |
 
 ---
 

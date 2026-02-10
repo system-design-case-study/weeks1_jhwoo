@@ -43,6 +43,7 @@ public class SecurityConfig {
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/api/search/**").permitAll()
+                        .requestMatchers("/api/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/businesses/**").permitAll()
                         .requestMatchers("/api/owners/signup", "/api/owners/login").permitAll()
                         .anyRequest().authenticated()

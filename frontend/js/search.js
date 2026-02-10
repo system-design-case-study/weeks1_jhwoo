@@ -9,13 +9,12 @@ const Search = (() => {
     20000: 12,
   };
 
-  const CATEGORY_EMOJI = {
-    '카페': '☕', '식당': '🍽️', '편의점': '🏪', '약국': '💊',
-    '병원': '🏥', '미용실': '💇', '세탁소': '👔', '문구점': '✏️',
-    '서점': '📚', '꽃집': '💐',
-  };
-  const DEFAULT_EMOJI = '📍';
   const PAGE_SIZE = 200;
+
+  function categoryDot(category) {
+    const color = MapModule.categoryColor(category);
+    return `<span class="cat-dot" style="background:${color}"></span>`;
+  }
 
   let allResults = [];
   let lastResults = [];
@@ -52,7 +51,7 @@ const Search = (() => {
       const card = document.createElement('button');
       card.className = 'category-card';
       card.innerHTML = `
-        <span class="category-emoji">${CATEGORY_EMOJI[cat] || DEFAULT_EMOJI}</span>
+        ${categoryDot(cat)}
         <span class="category-label">${cat}</span>
       `;
       card.addEventListener('click', () => searchByCategory(cat));
@@ -177,9 +176,11 @@ const Search = (() => {
       const lower = keyword.toLowerCase();
       const filtered = businesses.filter(biz => biz.name && biz.name.toLowerCase().includes(lower));
       lastResults = lastResults.concat(filtered);
+      addMarkers(filtered, pos);
       appendResultList(filtered);
     } else {
       lastResults = lastResults.concat(businesses);
+      addMarkers(businesses, pos);
       appendResultList(businesses);
     }
 
@@ -249,8 +250,7 @@ const Search = (() => {
   function addMarkers(businesses, pos) {
     businesses.forEach(biz => {
       const marker = MapModule.addMarker(biz.latitude || pos.lat, biz.longitude || pos.lng, biz);
-      const emoji = CATEGORY_EMOJI[biz.category] || DEFAULT_EMOJI;
-      const popupContent = `<strong>${emoji} ${escapeHtml(biz.name)}</strong><br>${escapeHtml(biz.address)}<br><small>${App.formatDistance(biz.distance)}</small>`;
+      const popupContent = `<strong>${escapeHtml(biz.name)}</strong><br>${escapeHtml(biz.address)}<br><small>${App.formatDistance(biz.distance)}</small>`;
       marker.bindPopup(popupContent);
       marker.on('click', () => onMarkerClick(biz));
     });
@@ -263,11 +263,10 @@ const Search = (() => {
     businesses.forEach(biz => {
       const favIcon = (typeof Favorites !== 'undefined' && Favorites.isFavorite(biz.id))
         ? '<span class="fav-icon">★</span>' : '';
-      const emoji = CATEGORY_EMOJI[biz.category] || DEFAULT_EMOJI;
       const li = document.createElement('li');
       li.dataset.id = biz.id;
       li.innerHTML = `
-        <div class="result-name">${favIcon}${emoji} ${escapeHtml(biz.name)}</div>
+        <div class="result-name">${favIcon}${categoryDot(biz.category)} ${escapeHtml(biz.name)}</div>
         <div class="result-address">${escapeHtml(biz.address)}</div>
         <div class="result-meta">
           <span>${App.formatDistance(biz.distance)}</span>
@@ -284,11 +283,10 @@ const Search = (() => {
     businesses.forEach(biz => {
       const favIcon = (typeof Favorites !== 'undefined' && Favorites.isFavorite(biz.id))
         ? '<span class="fav-icon">★</span>' : '';
-      const emoji = CATEGORY_EMOJI[biz.category] || DEFAULT_EMOJI;
       const li = document.createElement('li');
       li.dataset.id = biz.id;
       li.innerHTML = `
-        <div class="result-name">${favIcon}${emoji} ${escapeHtml(biz.name)}</div>
+        <div class="result-name">${favIcon}${categoryDot(biz.category)} ${escapeHtml(biz.name)}</div>
         <div class="result-address">${escapeHtml(biz.address)}</div>
         <div class="result-meta">
           <span>${App.formatDistance(biz.distance)}</span>

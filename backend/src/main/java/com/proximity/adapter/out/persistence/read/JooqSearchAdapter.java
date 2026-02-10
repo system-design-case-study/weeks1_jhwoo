@@ -3,6 +3,7 @@ package com.proximity.adapter.out.persistence.read;
 import com.proximity.application.dto.BusinessSummary;
 import com.proximity.application.port.out.SearchPort;
 import io.micrometer.core.instrument.Timer;
+import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.impl.DSL;
@@ -28,10 +29,15 @@ public class JooqSearchAdapter implements SearchPort {
 
     @Override
     public List<BusinessSummary> searchByLocation(double lat, double lng, double radiusMeters,
-                                                   int page, int size) {
+                                                   String category, int page, int size) {
         return searchQueryDurationTimer.record(() -> {
             Field<Object> point = stMakePoint(lng, lat);
             Field<Double> distance = stDistance(BUSINESSES.LOCATION, point).as("distance");
+
+            Condition where = stDWithin(BUSINESSES.LOCATION, point, radiusMeters);
+            if (category != null) {
+                where = where.and(BUSINESSES.CATEGORY.eq(category));
+            }
 
             return dsl
                     .select(
@@ -44,7 +50,7 @@ public class JooqSearchAdapter implements SearchPort {
                             BUSINESSES.CATEGORY
                     )
                     .from(BUSINESSES)
-                    .where(stDWithin(BUSINESSES.LOCATION, point, radiusMeters))
+                    .where(where)
                     .orderBy(DSL.field("distance"))
                     .limit(size)
                     .offset(page * size)
@@ -53,13 +59,18 @@ public class JooqSearchAdapter implements SearchPort {
     }
 
     @Override
-    public long countByLocation(double lat, double lng, double radiusMeters) {
+    public long countByLocation(double lat, double lng, double radiusMeters, String category) {
         Field<Object> point = stMakePoint(lng, lat);
+
+        Condition where = stDWithin(BUSINESSES.LOCATION, point, radiusMeters);
+        if (category != null) {
+            where = where.and(BUSINESSES.CATEGORY.eq(category));
+        }
 
         return dsl
                 .selectCount()
                 .from(BUSINESSES)
-                .where(stDWithin(BUSINESSES.LOCATION, point, radiusMeters))
+                .where(where)
                 .fetchOne(0, long.class);
     }
 }

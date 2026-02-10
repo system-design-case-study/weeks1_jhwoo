@@ -48,7 +48,7 @@ public class SearchService implements SearchUseCase {
 
         String cacheKey = GridCacheKeyGenerator.searchKey(
                 request.latitude(), request.longitude(), request.radius(),
-                request.page(), request.size());
+                request.category(), request.page(), request.size());
 
         Optional<SearchResponse> cached = cachePort.getSearchCache(cacheKey);
         if (cached.isPresent()) {
@@ -64,6 +64,7 @@ public class SearchService implements SearchUseCase {
                 request.latitude(),
                 request.longitude(),
                 radiusMeters,
+                request.category(),
                 request.page(),
                 request.size()
         );
@@ -71,7 +72,8 @@ public class SearchService implements SearchUseCase {
         long total = searchPort.countByLocation(
                 request.latitude(),
                 request.longitude(),
-                radiusMeters
+                radiusMeters,
+                request.category()
         );
 
         searchResultCountSummary.record(total);

@@ -24,7 +24,7 @@ class GridCacheKeyGeneratorTest {
             String key = GridCacheKeyGenerator.searchKey(lat, lng, radius);
 
             // then
-            assertThat(key).isEqualTo("search:37.57:126.98:1.0:0:20");
+            assertThat(key).isEqualTo("search:37.57:126.98:1.0:ALL:0:200");
         }
 
         @Test

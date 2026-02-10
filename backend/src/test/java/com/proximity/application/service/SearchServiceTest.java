@@ -69,7 +69,7 @@ class SearchServiceTest {
         @DisplayName("정상 검색 시 SearchResponse를 반환한다")
         void search_validRequest_returnsResponse() {
             // given
-            SearchRequest request = new SearchRequest(LATITUDE, LONGITUDE, 1.0, 0, 20);
+            SearchRequest request = new SearchRequest(LATITUDE, LONGITUDE, 1.0, null, 0, 20);
             double expectedRadiusMeters = 1000.0;
 
             when(cachePort.getSearchCache(anyString())).thenReturn(Optional.empty());
@@ -79,9 +79,9 @@ class SearchServiceTest {
                     new BusinessSummary(2L, "식당B", "서울시 중구", 37.5670, 126.9790, 300.0, "식당")
             );
 
-            when(searchPort.searchByLocation(eq(LATITUDE), eq(LONGITUDE), eq(expectedRadiusMeters), eq(0), eq(20)))
+            when(searchPort.searchByLocation(eq(LATITUDE), eq(LONGITUDE), eq(expectedRadiusMeters), eq(null), eq(0), eq(20)))
                     .thenReturn(businesses);
-            when(searchPort.countByLocation(eq(LATITUDE), eq(LONGITUDE), eq(expectedRadiusMeters)))
+            when(searchPort.countByLocation(eq(LATITUDE), eq(LONGITUDE), eq(expectedRadiusMeters), eq(null)))
                     .thenReturn(2L);
 
             // when
@@ -98,14 +98,14 @@ class SearchServiceTest {
         @DisplayName("검색 결과가 없으면 빈 리스트와 total=0을 반환한다 (EC-1)")
         void search_noResults_returnsEmptyList() {
             // given
-            SearchRequest request = new SearchRequest(LATITUDE, LONGITUDE, 0.5, 0, 20);
+            SearchRequest request = new SearchRequest(LATITUDE, LONGITUDE, 0.5, null, 0, 20);
             double expectedRadiusMeters = 500.0;
 
             when(cachePort.getSearchCache(anyString())).thenReturn(Optional.empty());
 
-            when(searchPort.searchByLocation(eq(LATITUDE), eq(LONGITUDE), eq(expectedRadiusMeters), eq(0), eq(20)))
+            when(searchPort.searchByLocation(eq(LATITUDE), eq(LONGITUDE), eq(expectedRadiusMeters), eq(null), eq(0), eq(20)))
                     .thenReturn(Collections.emptyList());
-            when(searchPort.countByLocation(eq(LATITUDE), eq(LONGITUDE), eq(expectedRadiusMeters)))
+            when(searchPort.countByLocation(eq(LATITUDE), eq(LONGITUDE), eq(expectedRadiusMeters), eq(null)))
                     .thenReturn(0L);
 
             // when
@@ -120,7 +120,7 @@ class SearchServiceTest {
         @DisplayName("유효하지 않은 radius 값이면 InvalidRadiusException을 던진다 (FR-002)")
         void search_invalidRadius_throwsException() {
             // given
-            SearchRequest request = new SearchRequest(LATITUDE, LONGITUDE, 3.0, 0, 20);
+            SearchRequest request = new SearchRequest(LATITUDE, LONGITUDE, 3.0, null, 0, 20);
 
             // when & then
             assertThatThrownBy(() -> searchService.search(request))
@@ -136,7 +136,7 @@ class SearchServiceTest {
         @DisplayName("Cache Hit 시 SearchPort를 호출하지 않는다")
         void search_cacheHit_doesNotCallSearchPort() {
             // given
-            SearchRequest request = new SearchRequest(LATITUDE, LONGITUDE, 1.0, 0, 20);
+            SearchRequest request = new SearchRequest(LATITUDE, LONGITUDE, 1.0, null, 0, 20);
             SearchResponse cachedResponse = new SearchResponse(
                     List.of(new BusinessSummary(1L, "카페A", "서울시 중구", 37.5665, 126.9780, 150.0, "카페")),
                     1L, 0, 20
@@ -149,15 +149,15 @@ class SearchServiceTest {
 
             // then
             assertThat(response).isEqualTo(cachedResponse);
-            verify(searchPort, never()).searchByLocation(anyDouble(), anyDouble(), anyDouble(), anyInt(), anyInt());
-            verify(searchPort, never()).countByLocation(anyDouble(), anyDouble(), anyDouble());
+            verify(searchPort, never()).searchByLocation(anyDouble(), anyDouble(), anyDouble(), any(), anyInt(), anyInt());
+            verify(searchPort, never()).countByLocation(anyDouble(), anyDouble(), anyDouble(), any());
         }
 
         @Test
         @DisplayName("Cache Miss 시 SearchPort 호출 후 결과를 캐싱한다")
         void search_cacheMiss_callsSearchPortAndCaches() {
             // given
-            SearchRequest request = new SearchRequest(LATITUDE, LONGITUDE, 1.0, 0, 20);
+            SearchRequest request = new SearchRequest(LATITUDE, LONGITUDE, 1.0, null, 0, 20);
             double expectedRadiusMeters = 1000.0;
 
             when(cachePort.getSearchCache(anyString())).thenReturn(Optional.empty());
@@ -165,9 +165,9 @@ class SearchServiceTest {
             List<BusinessSummary> businesses = List.of(
                     new BusinessSummary(1L, "카페A", "서울시 중구", 37.5665, 126.9780, 150.0, "카페")
             );
-            when(searchPort.searchByLocation(eq(LATITUDE), eq(LONGITUDE), eq(expectedRadiusMeters), eq(0), eq(20)))
+            when(searchPort.searchByLocation(eq(LATITUDE), eq(LONGITUDE), eq(expectedRadiusMeters), eq(null), eq(0), eq(20)))
                     .thenReturn(businesses);
-            when(searchPort.countByLocation(eq(LATITUDE), eq(LONGITUDE), eq(expectedRadiusMeters)))
+            when(searchPort.countByLocation(eq(LATITUDE), eq(LONGITUDE), eq(expectedRadiusMeters), eq(null)))
                     .thenReturn(1L);
 
             // when
@@ -187,11 +187,11 @@ class SearchServiceTest {
         @DisplayName("검색 시 radius가 histogram에 기록된다")
         void search_recordsRadiusHistogram() {
             // given
-            SearchRequest request = new SearchRequest(LATITUDE, LONGITUDE, 1.0, 0, 20);
+            SearchRequest request = new SearchRequest(LATITUDE, LONGITUDE, 1.0, null, 0, 20);
             when(cachePort.getSearchCache(anyString())).thenReturn(Optional.empty());
-            when(searchPort.searchByLocation(anyDouble(), anyDouble(), anyDouble(), anyInt(), anyInt()))
+            when(searchPort.searchByLocation(anyDouble(), anyDouble(), anyDouble(), any(), anyInt(), anyInt()))
                     .thenReturn(Collections.emptyList());
-            when(searchPort.countByLocation(anyDouble(), anyDouble(), anyDouble())).thenReturn(0L);
+            when(searchPort.countByLocation(anyDouble(), anyDouble(), anyDouble(), any())).thenReturn(0L);
 
             // when
             searchService.search(request);
@@ -204,7 +204,7 @@ class SearchServiceTest {
         @DisplayName("Cache Hit 시 cacheHitRatioHolder.recordHit()이 호출된다")
         void search_cacheHit_recordsHit() {
             // given
-            SearchRequest request = new SearchRequest(LATITUDE, LONGITUDE, 1.0, 0, 20);
+            SearchRequest request = new SearchRequest(LATITUDE, LONGITUDE, 1.0, null, 0, 20);
             SearchResponse cachedResponse = new SearchResponse(Collections.emptyList(), 0L, 0, 20);
             when(cachePort.getSearchCache(anyString())).thenReturn(Optional.of(cachedResponse));
 
@@ -220,11 +220,11 @@ class SearchServiceTest {
         @DisplayName("Cache Miss 시 cacheHitRatioHolder.recordMiss()가 호출된다")
         void search_cacheMiss_recordsMiss() {
             // given
-            SearchRequest request = new SearchRequest(LATITUDE, LONGITUDE, 1.0, 0, 20);
+            SearchRequest request = new SearchRequest(LATITUDE, LONGITUDE, 1.0, null, 0, 20);
             when(cachePort.getSearchCache(anyString())).thenReturn(Optional.empty());
-            when(searchPort.searchByLocation(anyDouble(), anyDouble(), anyDouble(), anyInt(), anyInt()))
+            when(searchPort.searchByLocation(anyDouble(), anyDouble(), anyDouble(), any(), anyInt(), anyInt()))
                     .thenReturn(Collections.emptyList());
-            when(searchPort.countByLocation(anyDouble(), anyDouble(), anyDouble())).thenReturn(0L);
+            when(searchPort.countByLocation(anyDouble(), anyDouble(), anyDouble(), any())).thenReturn(0L);
 
             // when
             searchService.search(request);
@@ -238,11 +238,11 @@ class SearchServiceTest {
         @DisplayName("Cache Miss 시 결과 건수가 searchResultCountSummary에 기록된다")
         void search_cacheMiss_recordsResultCount() {
             // given
-            SearchRequest request = new SearchRequest(LATITUDE, LONGITUDE, 1.0, 0, 20);
+            SearchRequest request = new SearchRequest(LATITUDE, LONGITUDE, 1.0, null, 0, 20);
             when(cachePort.getSearchCache(anyString())).thenReturn(Optional.empty());
-            when(searchPort.searchByLocation(anyDouble(), anyDouble(), anyDouble(), anyInt(), anyInt()))
+            when(searchPort.searchByLocation(anyDouble(), anyDouble(), anyDouble(), any(), anyInt(), anyInt()))
                     .thenReturn(Collections.emptyList());
-            when(searchPort.countByLocation(anyDouble(), anyDouble(), anyDouble())).thenReturn(5L);
+            when(searchPort.countByLocation(anyDouble(), anyDouble(), anyDouble(), any())).thenReturn(5L);
 
             // when
             searchService.search(request);

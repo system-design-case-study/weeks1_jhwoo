@@ -67,7 +67,7 @@ class JooqSearchAdapterTest extends AbstractIntegrationTest {
         void searchByLocation_withinRadius_returnsMatches() {
             // when
             List<BusinessSummary> result = jooqSearchAdapter.searchByLocation(
-                    GANGNAM_LAT, GANGNAM_LNG, 1000, 0, 10);
+                    GANGNAM_LAT, GANGNAM_LNG, 1000, null, 0, 10);
 
             // then
             assertThat(result).isNotEmpty();
@@ -79,7 +79,7 @@ class JooqSearchAdapterTest extends AbstractIntegrationTest {
         void searchByLocation_orderedByDistance() {
             // when
             List<BusinessSummary> result = jooqSearchAdapter.searchByLocation(
-                    GANGNAM_LAT, GANGNAM_LNG, 2000, 0, 10);
+                    GANGNAM_LAT, GANGNAM_LNG, 2000, null, 0, 10);
 
             // then
             assertThat(result.size()).isGreaterThanOrEqualTo(2);
@@ -94,9 +94,9 @@ class JooqSearchAdapterTest extends AbstractIntegrationTest {
         void searchByLocation_pagination() {
             // when
             List<BusinessSummary> page0 = jooqSearchAdapter.searchByLocation(
-                    GANGNAM_LAT, GANGNAM_LNG, 2000, 0, 2);
+                    GANGNAM_LAT, GANGNAM_LNG, 2000, null, 0, 2);
             List<BusinessSummary> page1 = jooqSearchAdapter.searchByLocation(
-                    GANGNAM_LAT, GANGNAM_LNG, 2000, 1, 2);
+                    GANGNAM_LAT, GANGNAM_LNG, 2000, null, 1, 2);
 
             // then
             assertThat(page0).hasSize(2);
@@ -112,7 +112,7 @@ class JooqSearchAdapterTest extends AbstractIntegrationTest {
         void searchByLocation_outsideRadius_excluded() {
             // when
             List<BusinessSummary> result = jooqSearchAdapter.searchByLocation(
-                    GANGNAM_LAT, GANGNAM_LNG, 500, 0, 10);
+                    GANGNAM_LAT, GANGNAM_LNG, 500, null, 0, 10);
 
             // then
             assertThat(result).noneMatch(b -> b.name().equals("부산 카페"));
@@ -124,7 +124,7 @@ class JooqSearchAdapterTest extends AbstractIntegrationTest {
         void searchByLocation_noResults_returnsEmpty() {
             // when
             List<BusinessSummary> result = jooqSearchAdapter.searchByLocation(
-                    0.0, 0.0, 1, 0, 10);
+                    0.0, 0.0, 1, null, 0, 10);
 
             // then
             assertThat(result).isEmpty();
@@ -139,7 +139,7 @@ class JooqSearchAdapterTest extends AbstractIntegrationTest {
         @DisplayName("반경 내 사업장 수를 정확히 반환해야 한다")
         void countByLocation_returnsCorrectCount() {
             // when
-            long count = jooqSearchAdapter.countByLocation(GANGNAM_LAT, GANGNAM_LNG, 2000);
+            long count = jooqSearchAdapter.countByLocation(GANGNAM_LAT, GANGNAM_LNG, 2000, null);
 
             // then
             assertThat(count).isGreaterThanOrEqualTo(2);
@@ -149,7 +149,7 @@ class JooqSearchAdapterTest extends AbstractIntegrationTest {
         @DisplayName("결과가 없으면 0을 반환해야 한다")
         void countByLocation_noResults_returnsZero() {
             // when
-            long count = jooqSearchAdapter.countByLocation(0.0, 0.0, 1);
+            long count = jooqSearchAdapter.countByLocation(0.0, 0.0, 1, null);
 
             // then
             assertThat(count).isZero();

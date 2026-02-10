@@ -806,23 +806,3 @@ docker compose --profile seed up csv-loader
 | Test | 37 파일 / 215개 | Singleton Testcontainer 기반, 도메인/서비스/컨트롤러/인프라/Adapter-Persistence/Cache 통합 테스트 |
 | Frontend | 9 JS | app, map, geolocation, api, search, detail, admin, favorites, geohash-viz |
 | Infra | Docker Compose (9 서비스), nginx.conf, Flyway, k6 2개, CSV loader |
-
----
-
-## 13. 회고
-
-### 잘한 점
-
-- **설계 문서 선행 작성**: plan → spec → research → data-model을 구현 전에 작성하여 "왜 이 기술을 선택했는가"에 대한 고민 시간이 크게 줄었다
-- **대안 비교 문서화**: 모든 결정에 2개 이상 대안을 비교하고 "선택하지 않은 이유"를 명시한 것이 설계 리뷰에 효과적
-- **Hexagonal Architecture**: Port/Adapter 덕분에 Category 검색 추가 시 기존 도메인/인프라 코드에 영향 없이 새 Port/Adapter만 추가
-- **실제 데이터 사용**: 랜덤 시드 대신 공공데이터 포털의 실제 음식점 데이터를 적재하여 현실적인 데이터 분포에서 검증
-- **Viewport 검색 시도와 빠른 철회**: 구현 후 서비스 본질과 맞지 않음을 인식하고 전량 revert — "작동하는 코드"보다 "올바른 설계"를 우선한 판단
-- **테스트 인프라 투자**: Singleton Testcontainer 도입으로 테스트 실행 시간 47초→18초(62% 단축), 152→215개 테스트로 커버리지 강화
-
-### 개선할 점
-
-- **테스트 자동화 시점**: 인프라 통합 테스트를 구현 초기에 작성했으면 설정 오류를 더 빠르게 발견할 수 있었다
-- **Grid 캐시 키 부동소수점**: `Math.round(value / 0.01) * 0.01`에서 부동소수점 오차 가능 — 운영 시 `BigDecimal` 또는 정수 기반 Grid 고려 필요
-- **부하 테스트 결과 미기록**: k6 스크립트는 작성했으나 실행 결과를 정량적으로 기록하지 않았다
-- **Viewport 검색 설계 검증 부재**: 구현 전에 "서비스 본질과 부합하는가"를 설계 단계에서 충분히 검토했으면 구현/철회 비용을 절약할 수 있었다

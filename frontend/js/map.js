@@ -76,8 +76,26 @@ const MapModule = (() => {
     markersLayer.clearLayers();
   }
 
+  const CATEGORY_COLORS = {
+    '카페': '#8B4513', '식당': '#E74C3C', '편의점': '#27AE60', '약국': '#3498DB',
+    '병원': '#E91E63', '미용실': '#9B59B6', '세탁소': '#00BCD4', '문구점': '#FF9800',
+    '서점': '#795548', '꽃집': '#F06292',
+  };
+  const DEFAULT_MARKER_COLOR = '#3388ff';
+
+  function createCategoryIcon(category) {
+    const color = CATEGORY_COLORS[category] || DEFAULT_MARKER_COLOR;
+    return L.divIcon({
+      className: 'category-marker',
+      html: `<div style="background:${color};width:12px;height:12px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);"></div>`,
+      iconSize: [16, 16],
+      iconAnchor: [8, 8],
+    });
+  }
+
   function addMarker(lat, lng, data) {
-    const marker = L.marker([lat, lng]).addTo(markersLayer);
+    const icon = createCategoryIcon(data.category);
+    const marker = L.marker([lat, lng], { icon }).addTo(markersLayer);
     marker.businessData = data;
     return marker;
   }

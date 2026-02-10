@@ -139,8 +139,14 @@ const Api = (() => {
     return request('DELETE', path);
   }
 
-  async function search(latitude, longitude, radius, page, size) {
-    return get('/search', { latitude, longitude, radius, page, size });
+  async function search(latitude, longitude, radius, category, page, size) {
+    const params = { latitude, longitude, radius, page, size };
+    if (category) params.category = category;
+    return get('/search', params);
+  }
+
+  async function getCategories() {
+    return get('/categories');
   }
 
   async function getBusinessDetail(id) {
@@ -178,6 +184,7 @@ const Api = (() => {
 
   return {
     search,
+    getCategories,
     getBusinessDetail,
     createBusiness,
     updateBusiness,

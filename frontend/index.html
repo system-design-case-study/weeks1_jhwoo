@@ -40,11 +40,11 @@
       </header>
 
       <div id="search-view" class="panel-view active">
-        <div id="search-controls">
-          <div id="search-controls-row1">
-            <input type="text" id="keyword-input" placeholder="사업장 이름 검색">
-          </div>
-          <div id="search-controls-row2">
+        <div id="category-select-section">
+          <h2 class="category-title">근처에 무엇을 찾고 계세요?</h2>
+          <div id="category-cards"></div>
+          <div class="radius-selector">
+            <label>반경</label>
             <select id="radius-select">
               <option value="500">0.5 km</option>
               <option value="1000" selected>1 km</option>
@@ -52,18 +52,32 @@
               <option value="5000">5 km</option>
               <option value="20000">20 km</option>
             </select>
-            <select id="category-filter">
-              <option value="">전체</option>
-            </select>
-            <select id="sort-select">
-              <option value="distance">거리순</option>
-              <option value="name">이름순</option>
-            </select>
-            <button id="btn-search">검색</button>
           </div>
         </div>
-        <div id="search-info"></div>
-        <ul id="search-results"></ul>
+
+        <div id="search-results-section" class="hidden">
+          <div id="results-header">
+            <button id="btn-back-to-categories" class="back-btn">&larr; 뒤로</button>
+            <div id="results-controls">
+              <select id="radius-select-results">
+                <option value="500">0.5 km</option>
+                <option value="1000" selected>1 km</option>
+                <option value="2000">2 km</option>
+                <option value="5000">5 km</option>
+                <option value="20000">20 km</option>
+              </select>
+              <select id="category-filter">
+                <option value="">전체</option>
+              </select>
+              <input type="text" id="keyword-input" placeholder="이름 검색">
+            </div>
+          </div>
+          <div id="search-info"></div>
+          <ul id="search-results"></ul>
+          <div id="scroll-sentinel" class="scroll-sentinel hidden">
+            <span class="loading-spinner"></span> 불러오는 중...
+          </div>
+        </div>
       </div>
 
       <div id="detail-view" class="panel-view">
